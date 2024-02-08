@@ -1,6 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 
-#define PIN 6
+#define PIN 11
 #define NUMPIXELS 4
 
 #define CLOSE 20
@@ -14,15 +14,18 @@
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 #define DELAYVAL 500
 
+const int sensorPins[] = {A0, A1, A2, A3, A4, A5, A6, A7};
 
-const int MOT_A1 = 2;
-const int MOT_A2 = 3;
-const int MOT_B1 = 4;
-const int MOT_B2 = 5;
+#define BLACK_LIMIT 800
+
+const int MOT_A1 = 3;
+const int MOT_A2 = 5;
+const int MOT_B1 = 6;
+const int MOT_B2 = 10;
 
 
 const int trigPin = 12;
-const int echoPin = 11;
+const int echoPin = 13;
 // defines variables
 long duration;
 int distance;
@@ -39,7 +42,9 @@ void setup() {
   pinMode(MOT_B1, OUTPUT); // Sets the echoPin as an Input
   pinMode(MOT_B2, OUTPUT); // Sets the echoPin as an Input
 
-
+  for (int i = 0; i < 8; i++) {
+    pinMode(sensorPins[i], INPUT);
+  }
 }
 
 
@@ -52,32 +57,63 @@ void loop() {
   Serial.print(distance);
   Serial.println(" cm");
 
+  // for (int i = 0; i < 8; i++) {
+  //   int sensorState = analogRead(sensorPins[i]);
+  //   Serial.print(sensorState);
+  //   Serial.print(" "); // Print a space between each sensor state
+  // }
+  int sensor_A2 = analogRead(A2);
+  int sensor_A3 = analogRead(A3);
+  int sensor_A4 = analogRead(A4);
+  int sensor_A5 = analogRead(A5);
+
+  Serial.println(sensor_A3);
+  Serial.println(sensor_A4);
+
+  goStraight();
+
+
+  // if (sensor_A2 >= BLACK_LIMIT ){
+  //   goStraight();
+  // }
+  // else if (sensor_A3 >= BLACK_LIMIT) {
+  //   goStraight();
+  // }
+  // else if (sensor_A4 >= BLACK_LIMIT) {
+  //   goStraight();
+  // }
+  // else if (sensor_A5 >= BLACK_LIMIT) {
+  //   goStraight();
+  // }
+  // else {
+  //   stopGoStraight();
+  // }
+
   // stop();
   // delay(1000);
-  if(distance <= CLOSE){
-    pixels.clear();
-    setPixlsRed();
-    pixels.show();
-    stopGoStraight();
-    turnLeft();
-  }
-  else if(distance <= NORMAL){
-    stopTurnLeft();
-    pixels.clear();
-    setPixlsYellow();
-    pixels.show();
-    goStraight();
+  // if(distance <= CLOSE){
+  //   pixels.clear();
+  //   setPixlsRed();
+  //   pixels.show();
+  //   stopGoStraight();
+  //   turnRight();
+  // }
+  // else if(distance <= NORMAL){
+  //   stopTurnRight();
+  //   pixels.clear();
+  //   setPixlsYellow();
+  //   pixels.show();
+  //   goStraight();
     
-  }
-  else{
-    stopTurnLeft();
-    pixels.clear();
-    setPixlsGreen();
-    pixels.show();
-    goStraight();
+  // }
+  // else{
+  //   stopTurnRight();
+  //   pixels.clear();
+  //   setPixlsGreen();
+  //   pixels.show();
+  //   goStraight();
 
-  }
-
+  // }
 
 }
 
@@ -95,8 +131,8 @@ int culculateDistance(){
 }
 
 void goStraight(){
-  digitalWrite(MOT_A2, HIGH);
-  digitalWrite(MOT_B2, HIGH);
+  analogWrite(MOT_A2, 480);
+  analogWrite(MOT_B2, 475);
 }
 
 void stopGoStraight(){
@@ -105,12 +141,23 @@ void stopGoStraight(){
 }
 
 void turnLeft(){
-  digitalWrite(MOT_A1, HIGH);
-  digitalWrite(MOT_B2, HIGH);
+  digitalWrite(MOT_A2, HIGH);
+  digitalWrite(MOT_B1, HIGH);
 }
 void stopTurnLeft(){
-  digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_B2, LOW);
+  digitalWrite(MOT_A2, LOW);
+  digitalWrite(MOT_B1, LOW);
+}
+
+
+void turnRight(){
+  digitalWrite(MOT_A2, HIGH);
+  digitalWrite(MOT_B1, HIGH);
+}
+
+void stopTurnRight(){
+  digitalWrite(MOT_A2, LOW);
+  digitalWrite(MOT_B1, LOW);
 }
 
 void stop(){
