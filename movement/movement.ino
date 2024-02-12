@@ -9,6 +9,10 @@
 
 #define BRIGHTNES_LEVEL 20
 
+#define MOTOR_TURN_SPEED 50
+
+
+
 
 //I have no idea what is that
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
@@ -53,24 +57,67 @@ void loop() {
   // Clears the trigPin
   distance = culculateDistance();
   // Prints the distance on the Serial Monitor
-  Serial.print("Distance from the object = ");
-  Serial.print(distance);
-  Serial.println(" cm");
+  // Serial.print("Distance from the object = ");
+  // Serial.print(distance);
+  // Serial.println(" cm");
 
-  // for (int i = 0; i < 8; i++) {
-  //   int sensorState = analogRead(sensorPins[i]);
-  //   Serial.print(sensorState);
-  //   Serial.print(" "); // Print a space between each sensor state
-  // }
+  for (int i = 0; i < 8; i++) {
+    int sensorState = analogRead(sensorPins[i]);
+    Serial.print(sensorState);
+    Serial.print(" "); // Print a space between each sensor state
+  }
+    Serial.println(" "); // Print a space between each sensor state
+
+
+
+  int sensor_A1 = analogRead(A1);
   int sensor_A2 = analogRead(A2);
   int sensor_A3 = analogRead(A3);
   int sensor_A4 = analogRead(A4);
   int sensor_A5 = analogRead(A5);
+  int sensor_A6 = analogRead(A6);
 
-  Serial.println(sensor_A3);
-  Serial.println(sensor_A4);
+  // Serial.println(sensor_A3);
+  // Serial.println(sensor_A4);
 
-  goStraight();
+
+  if (sensor_A1  >= BLACK_LIMIT && sensor_A2  >= BLACK_LIMIT){
+    turnRight();
+    Serial.println("turn Right");
+    delay(10);
+    stopTurnRight();
+
+  }
+  else if(sensor_A5  >= BLACK_LIMIT && sensor_A6  >= BLACK_LIMIT){
+    turnLeft();
+    Serial.println("turn Left");
+    delay(10);
+    stopTurnLeft();
+
+
+  }
+  else if(sensor_A2  >= BLACK_LIMIT){
+    // stopTurnLeft();
+    // stopTurnRight();
+    smallTurnRight();
+    Serial.println("small turn Right");
+    
+  }
+  else if(sensor_A5  >= BLACK_LIMIT){
+    // stopTurnLeft();
+    // stopTurnRight();
+
+    smallTurnLeft();
+    Serial.println("small turn  left");  
+  }
+  else{
+    stopTurnLeft();
+    stopTurnRight();
+
+    goStraight();
+
+  }
+
 
 
   // if (sensor_A2 >= BLACK_LIMIT ){
@@ -135,17 +182,24 @@ void goStraight(){
   analogWrite(MOT_B2, 475);
 }
 
+void smallTurnLeft(){
+  analogWrite(MOT_A2, MOTOR_TURN_SPEED);
+}
+void smallTurnRight(){
+  analogWrite(MOT_B2, MOTOR_TURN_SPEED);
+}
+
 void stopGoStraight(){
   digitalWrite(MOT_A2, LOW);
   digitalWrite(MOT_B2, LOW);
 }
 
 void turnLeft(){
-  digitalWrite(MOT_A2, HIGH);
+  // digitalWrite(MOT_A2, HIGH);
   digitalWrite(MOT_B1, HIGH);
 }
 void stopTurnLeft(){
-  digitalWrite(MOT_A2, LOW);
+  // digitalWrite(MOT_A2, LOW);
   digitalWrite(MOT_B1, LOW);
 }
 
@@ -156,7 +210,7 @@ void turnRight(){
 }
 
 void stopTurnRight(){
-  digitalWrite(MOT_A2, LOW);
+  // digitalWrite(MOT_A2, LOW);
   digitalWrite(MOT_B1, LOW);
 }
 
