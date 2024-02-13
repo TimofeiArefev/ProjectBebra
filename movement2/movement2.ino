@@ -9,7 +9,7 @@
 
 #define BRIGHTNES_LEVEL 20
 
-#define MOTOR_TURN_SPEED 50
+#define MOTOR_TURN_SPEED 400
 
 
 
@@ -75,15 +75,61 @@ void loop() {
 
 
   if (sensor_A0 >= BLACK_LIMIT && sensor_A1 >= BLACK_LIMIT && sensor_A2  >= BLACK_LIMIT){
+    stop();
+    Serial.println("1 turn right");
+    delay(3000);
+    goStraight();
+    delay(200);
     turnRight();
-    Serial.println("1 turn Right");
-    delay(400);
+    Serial.println("turn right");
+
+    delay(600);
+    stop();
+    delay(3000);
+  
   }
-  else if (sensor_A1 >= BLACK_LIMIT && sensor_A2  >= BLACK_LIMIT){
-    turnRight();
-    Serial.println("2 turn Right");
-    delay(100);
+  else if (sensor_A5 >= BLACK_LIMIT && sensor_A6 >= BLACK_LIMIT && sensor_A7  >= BLACK_LIMIT){
+    stop();
+    Serial.println("turn Left");
+    delay(3000);
+    goStraight();
+    delay(200);
+    turnLeft();
+    Serial.println("turn left");
+
+    delay(600);
+    stop();
+    delay(3000);
+  
   }
+  else if (sensor_A0 <= BLACK_LIMIT && sensor_A1 <= BLACK_LIMIT && sensor_A2  <= BLACK_LIMIT && sensor_A3 <= BLACK_LIMIT && 
+  sensor_A4  <= BLACK_LIMIT && sensor_A5 <= BLACK_LIMIT && sensor_A6 <= BLACK_LIMIT && sensor_A7  <= BLACK_LIMIT){
+    stop();
+    Serial.println("Full stop");
+    delay(3000);    
+    fullTurnRight();
+    Serial.println("turn right");
+
+    delay(740);
+    stop();
+    delay(3000);
+
+  
+  
+  }
+  else if (sensor_A2  >= BLACK_LIMIT){
+    smallTurnRight();
+    Serial.println("small turn Right");
+  }
+
+  else if (sensor_A5  >= BLACK_LIMIT){
+    smallTurnLeft();
+    Serial.println("small turn Left");
+  }
+  // else if (sensor_A1 >= BLACK_LIMIT && sensor_A2  >= BLACK_LIMIT){
+  //   turnRight();
+  //   Serial.println("2 turn Right");
+  // }
   // else if (sensor_A2  >= BLACK_LIMIT){
   //   smallTurnRight();
   //   Serial.println("3 small turn Right");
@@ -144,6 +190,16 @@ void turnRight(){
   
   digitalWrite(MOT_A1, LOW);
   digitalWrite(MOT_B1, LOW);
+  digitalWrite(MOT_B2, LOW);
+}
+
+
+void fullTurnRight(){
+  digitalWrite(MOT_A2, HIGH);
+  digitalWrite(MOT_B1, HIGH);
+  
+
+  digitalWrite(MOT_A1, LOW);
   digitalWrite(MOT_B2, LOW);
 }
 
