@@ -73,36 +73,30 @@ void loop() {
   int sensor_A6 = analogRead(A6);
   int sensor_A7 = analogRead(A7);
 
-  Serial.println(sensor_A3);
-  Serial.println(sensor_A4);
 
-
-  if (sensor_A3 >= BLACK_LIMIT && sensor_A4 >= BLACK_LIMIT){
-    forward();
-  } else if ((sensor_A0 <= BLACK_LIMIT) && (sensor_A1 <= BLACK_LIMIT) && (sensor_A2 <= BLACK_LIMIT) && (sensor_A3 >= BLACK_LIMIT) && (sensor_A4 >= BLACK_LIMIT)) {
-    stop();
-    delay(300);
-    left();
-    Serial.println("Turning Left");
-    while (! ((analogRead(A0) >= BLACK_LIMIT) && (analogRead(A1) >= BLACK_LIMIT) && (analogRead(A2) <= BLACK_LIMIT) && (analogRead(A3) >= BLACK_LIMIT) && (analogRead(A4) >= BLACK_LIMIT))) {}
-    stop();
-  } else if ((sensor_A0 >= BLACK_LIMIT) && (sensor_A1 >= BLACK_LIMIT) && (sensor_A2 <= BLACK_LIMIT) && (sensor_A3 <= BLACK_LIMIT) && (sensor_A4 <= BLACK_LIMIT)) { 
-    stop();
-    Serial.println("Let me Check!");
-    delay(100);
-    check();
-  } else if ((sensor_A0 <= BLACK_LIMIT) && (sensor_A1 <= BLACK_LIMIT) && (sensor_A2 <= BLACK_LIMIT) && (sensor_A3 <= BLACK_LIMIT) && (sensor_A4 <= BLACK_LIMIT)) { 
-    stop();
-    Serial.println("T Point! Going Left");
-    delay(600);
-    left();
-    delay(500);
-  } else if ((sensor_A0 >= BLACK_LIMIT) && (sensor_A1 >= BLACK_LIMIT) && (sensor_A2 >= BLACK_LIMIT) && (sensor_A3 >= BLACK_LIMIT) && (sensor_A4 >= BLACK_LIMIT)) {
-    Serial.println("Dead End! Taking a U-Turn");
-    u_turn();
+  if (sensor_A0 >= BLACK_LIMIT && sensor_A1 >= BLACK_LIMIT && sensor_A2  >= BLACK_LIMIT){
+    turnRight();
+    Serial.println("1 turn Right");
+    delay(400);
   }
-}
+  else if (sensor_A1 >= BLACK_LIMIT && sensor_A2  >= BLACK_LIMIT){
+    turnRight();
+    Serial.println("2 turn Right");
+    delay(100);
+  }
+  // else if (sensor_A2  >= BLACK_LIMIT){
+  //   smallTurnRight();
+  //   Serial.println("3 small turn Right");
+  // }
+  else{
+    goStraight();
+  }
 
+  // if(sensor_A5 >= BLACK_LIMIT && sensor_A6 >= BLACK_LIMIT && sensor_A7  <= BLACK_LIMIT){
+  //   smallTurnLeft();
+  //   Serial.println("3 small turn LEFT");
+  // }
+}
 
 int culculateDistance(){
   digitalWrite(trigPin, LOW);
@@ -117,76 +111,47 @@ int culculateDistance(){
   return duration*0.034/2;
 }
 
-void check() {
-  forward();
-  Serial.println("Going forward to check");
-  delay(200);
-  stop();
-  if ((analogRead(A0) >= BLACK_LIMIT) && (analogRead(A1) >= BLACK_LIMIT) && (analogRead(A2) <= BLACK_LIMIT) && (analogRead(A3) <= BLACK_LIMIT) && (analogRead(A4) >= BLACK_LIMIT)) { 
-    forward();
-    Serial.println("Going Forward");
-
-  } 
-  else if ((analogRead(A0) >= BLACK_LIMIT) && (analogRead(A1) >= BLACK_LIMIT) && (analogRead(A2) >= BLACK_LIMIT) && (analogRead(A3) >= BLACK_LIMIT) && (analogRead(A4) >= BLACK_LIMIT)) {
-    right();
-    Serial.println("Turning Right");
-
-  } 
-  else if (analogRead(A0) <= BLACK_LIMIT && (analogRead(A1) <= BLACK_LIMIT) && (analogRead(A2) <= BLACK_LIMIT) && (analogRead(A3) <= BLACK_LIMIT) && (analogRead(A4) <= BLACK_LIMIT)) {
-    Serial.println("FINISH! I have completed the Maze");
-    while (true) {}
-  }
-
-
-}
-
-void forward(){
+void goStraight(){
   analogWrite(MOT_A1, 0);
   analogWrite(MOT_A2, 480);
   analogWrite(MOT_B1, 0);
   analogWrite(MOT_B2, 474);
 }
 
-void backward(){
-  analogWrite(MOT_A1, 480);
-  analogWrite(MOT_A2, 0);
-  analogWrite(MOT_B1, 474);
-  analogWrite(MOT_B2, 0);
+void smallTurnLeft(){
+  analogWrite(MOT_A2, MOTOR_TURN_SPEED);
+  analogWrite(MOT_B2, 474);
+
 }
+void smallTurnRight(){
+  analogWrite(MOT_B2, MOTOR_TURN_SPEED);
+  analogWrite(MOT_A2, 480);
+
+}
+
+
+void turnLeft(){
+  digitalWrite(MOT_B2, HIGH);
+
+  digitalWrite(MOT_A1, LOW);
+  digitalWrite(MOT_A2, LOW);
+  digitalWrite(MOT_B1, LOW);
+}
+
+
+void turnRight(){
+  digitalWrite(MOT_A2, HIGH);
+  
+  digitalWrite(MOT_A1, LOW);
+  digitalWrite(MOT_B1, LOW);
+  digitalWrite(MOT_B2, LOW);
+}
+
 
 void stop(){
   digitalWrite(MOT_A1, LOW);
   digitalWrite(MOT_B1, LOW);
   digitalWrite(MOT_A2, LOW);
-  digitalWrite(MOT_B2, LOW);
-}
-
-void u_turn() {
-  digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_A2, HIGH);
-  digitalWrite(MOT_B1, HIGH);
-  digitalWrite(MOT_B2, LOW);
-
-  while (analogRead(A4) <= BLACK_LIMIT) {
-    Serial.println("u_turn");
-  }
-  stop();
-}
-
-void right() {
-  digitalWrite(MOT_A1, HIGH);
-  digitalWrite(MOT_A2, LOW);
-  digitalWrite(MOT_B1, LOW);
-  digitalWrite(MOT_B2, HIGH);
-  while (analogRead(A4) <= BLACK_LIMIT) {
-    Serial.println("right");
-  }
-}
-
-void left() {
-  digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_A2, HIGH);
-  digitalWrite(MOT_B1, HIGH);
   digitalWrite(MOT_B2, LOW);
 }
 
