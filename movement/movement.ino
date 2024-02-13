@@ -18,7 +18,10 @@
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 #define DELAYVAL 500
 
+unsigned long start = millis();
+
 const int sensorPins[] = {A0, A1, A2, A3, A4, A5, A6, A7};
+int sensorsValues[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 #define BLACK_LIMIT 800
 
@@ -51,56 +54,52 @@ void setup() {
 }
 
 
+
 // the loop function runs over and over again forever
 void loop() {
   // Clears the trigPin
   distance = culculateDistance();
 
-  for (int i = 0; i < 8; i++) {
-    int sensorState = analogRead(sensorPins[i]);
-    Serial.print(sensorState);
-    Serial.print(" ");
-  }
-  Serial.println(" ");
-  delay(100);
+  getSensors();
 
-  int sensor_A0 = analogRead(A0);
-  int sensor_A1 = analogRead(A1);
-  int sensor_A2 = analogRead(A2);
-  int sensor_A3 = analogRead(A3);
-  int sensor_A4 = analogRead(A4);
-  int sensor_A5 = analogRead(A5);
-  int sensor_A6 = analogRead(A6);
-  int sensor_A7 = analogRead(A7);
-
-  Serial.println(sensor_A3);
-  Serial.println(sensor_A4);
-
-
-  if (sensor_A3 >= BLACK_LIMIT && sensor_A4 >= BLACK_LIMIT){
+  if(
+    sensorsValues[6] == 1 &&
+    sensorsValues[7] == 1
+  ){
+    do {
+      left();
+      getSensors();
+    } while(!(
+        (sensorsValues[5] == 1 || sensorsValues[2] == 1) ||
+        (sensorsValues[4] == 1 && sensorsValues[3] == 1)
+      ));
+  } else if (
+    (sensorsValues[5] == 1 || sensorsValues[2] == 1) ||
+    (sensorsValues[4] == 1 && sensorsValues[3] == 1)
+  ){
     forward();
-  } else if ((sensor_A0 <= BLACK_LIMIT) && (sensor_A1 <= BLACK_LIMIT) && (sensor_A2 <= BLACK_LIMIT) && (sensor_A3 >= BLACK_LIMIT) && (sensor_A4 >= BLACK_LIMIT)) {
-    stop();
-    delay(300);
-    left();
-    Serial.println("Turning Left");
-    while (! ((analogRead(A0) >= BLACK_LIMIT) && (analogRead(A1) >= BLACK_LIMIT) && (analogRead(A2) <= BLACK_LIMIT) && (analogRead(A3) >= BLACK_LIMIT) && (analogRead(A4) >= BLACK_LIMIT))) {}
-    stop();
-  } else if ((sensor_A0 >= BLACK_LIMIT) && (sensor_A1 >= BLACK_LIMIT) && (sensor_A2 <= BLACK_LIMIT) && (sensor_A3 <= BLACK_LIMIT) && (sensor_A4 <= BLACK_LIMIT)) { 
-    stop();
-    Serial.println("Let me Check!");
-    delay(100);
-    check();
-  } else if ((sensor_A0 <= BLACK_LIMIT) && (sensor_A1 <= BLACK_LIMIT) && (sensor_A2 <= BLACK_LIMIT) && (sensor_A3 <= BLACK_LIMIT) && (sensor_A4 <= BLACK_LIMIT)) { 
-    stop();
-    Serial.println("T Point! Going Left");
-    delay(600);
-    left();
-    delay(500);
-  } else if ((sensor_A0 >= BLACK_LIMIT) && (sensor_A1 >= BLACK_LIMIT) && (sensor_A2 >= BLACK_LIMIT) && (sensor_A3 >= BLACK_LIMIT) && (sensor_A4 >= BLACK_LIMIT)) {
-    Serial.println("Dead End! Taking a U-Turn");
-    u_turn();
+  } else {
+    do{
+      right();
+      getSensors();
+      break;
+    }while(!(
+      (sensorsValues[5] == 1 || sensorsValues[2] == 1) || 
+      (sensorsValues[4] == 1 && sensorsValues[3] == 1)
+    ));
   }
+}
+
+void getSensors(){
+  for (int i = 0; i < sizeof(sensorPins) / sizeof(sensorPins[0]); i++) {
+    int sensorState = analogRead(sensorPins[i]);
+    sensorsValues[i] = sensorState >= BLACK_LIMIT ? 1 : 0;
+    
+    Serial.print(sensorsValues[i]);
+    Serial.print(" ");
+
+  }
+  Serial.println("");
 }
 
 
@@ -115,29 +114,6 @@ int culculateDistance(){
   duration = pulseIn(echoPin, HIGH);
   // Calculating the distance
   return duration*0.034/2;
-}
-
-void check() {
-  forward();
-  Serial.println("Going forward to check");
-  delay(200);
-  stop();
-  if ((analogRead(A0) >= BLACK_LIMIT) && (analogRead(A1) >= BLACK_LIMIT) && (analogRead(A2) <= BLACK_LIMIT) && (analogRead(A3) <= BLACK_LIMIT) && (analogRead(A4) >= BLACK_LIMIT)) { 
-    forward();
-    Serial.println("Going Forward");
-
-  } 
-  else if ((analogRead(A0) >= BLACK_LIMIT) && (analogRead(A1) >= BLACK_LIMIT) && (analogRead(A2) >= BLACK_LIMIT) && (analogRead(A3) >= BLACK_LIMIT) && (analogRead(A4) >= BLACK_LIMIT)) {
-    right();
-    Serial.println("Turning Right");
-
-  } 
-  else if (analogRead(A0) <= BLACK_LIMIT && (analogRead(A1) <= BLACK_LIMIT) && (analogRead(A2) <= BLACK_LIMIT) && (analogRead(A3) <= BLACK_LIMIT) && (analogRead(A4) <= BLACK_LIMIT)) {
-    Serial.println("FINISH! I have completed the Maze");
-    while (true) {}
-  }
-
-
 }
 
 void forward(){
@@ -161,35 +137,19 @@ void stop(){
   digitalWrite(MOT_B2, LOW);
 }
 
-void u_turn() {
-  digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_A2, HIGH);
-  digitalWrite(MOT_B1, HIGH);
-  digitalWrite(MOT_B2, LOW);
-
-  while (analogRead(A4) <= BLACK_LIMIT) {
-    Serial.println("u_turn");
-  }
-  stop();
-}
-
-void right() {
+void left(){
   digitalWrite(MOT_A1, HIGH);
-  digitalWrite(MOT_A2, LOW);
   digitalWrite(MOT_B1, LOW);
+  digitalWrite(MOT_A2, LOW);
   digitalWrite(MOT_B2, HIGH);
-  while (analogRead(A4) <= BLACK_LIMIT) {
-    Serial.println("right");
-  }
 }
 
-void left() {
+void right(){
   digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_A2, HIGH);
   digitalWrite(MOT_B1, HIGH);
+  digitalWrite(MOT_A2, HIGH);
   digitalWrite(MOT_B2, LOW);
 }
-
 
 void setPixlsRed(){
   Serial.println("Pixel Red");
