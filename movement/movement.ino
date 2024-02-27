@@ -3,175 +3,228 @@
 #define PIN 11
 #define NUMPIXELS 4
 
-#define CLOSE 20
-#define NORMAL 30
-#define FAR 100
-
 #define BRIGHTNES_LEVEL 20
-
-#define MOTOR_TURN_SPEED 50
-
-
-
-
-//I have no idea what is that
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
-#define DELAYVAL 500
-
-unsigned long start = millis();
 
 const int sensorPins[] = {A0, A1, A2, A3, A4, A5, A6, A7};
 int sensorsValues[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-#define BLACK_LIMIT 800
+#define BLACK_LIMIT 700
 
 const int MOT_A1 = 3;
 const int MOT_A2 = 5;
 const int MOT_B1 = 6;
 const int MOT_B2 = 10;
 
+const int MOT_R1 = 4;
+const int MOT_R2 = 2;
 
 const int trigPin = 12;
 const int echoPin = 13;
-// defines variables
-long duration;
+
+int countL = 0;
+int countR = 0;
+
+int duration;
 int distance;
 
+bool grabed = true;
+bool calibrated = false;
+bool solved = false;
+bool won = false;
+
+void rotationL(){
+  countL++;
+}
+
+void rotationR(){
+  countR++;
+}
 
 void setup() {
   Serial.begin(9600);
-  pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
-  pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
  
-  pinMode(MOT_A1, OUTPUT); // Sets the echoPin as an Input
-  pinMode(MOT_A2, OUTPUT); // Sets the echoPin as an Input
-  pinMode(MOT_B1, OUTPUT); // Sets the echoPin as an Input
-  pinMode(MOT_B2, OUTPUT); // Sets the echoPin as an Input
+  pinMode(MOT_A1, OUTPUT);
+  pinMode(MOT_A2, OUTPUT);
+  pinMode(MOT_B1, OUTPUT);
+  pinMode(MOT_B2, OUTPUT);
+  pinMode(MOT_R1, INPUT);
+  pinMode(MOT_R2, INPUT);
 
   for (int i = 0; i < 8; i++) {
     pinMode(sensorPins[i], INPUT);
   }
+
+  attachInterrupt(digitalPinToInterrupt(MOT_R1), rotationL, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(MOT_R2), rotationR, CHANGE);
 }
 
 
-
-// the loop function runs over and over again forever
 void loop() {
-  // Clears the trigPin
-  distance = culculateDistance();
+  read_sensors();
 
-  getSensors();
+  if(!solved){
+    solve();
+  }
+}
 
-  if(
-    sensorsValues[6] == 1 &&
-    sensorsValues[7] == 1
-  ){
-    do {
-      left();
-      getSensors();
-    } while(!(
-        (sensorsValues[5] == 1 || sensorsValues[2] == 1) ||
-        (sensorsValues[4] == 1 && sensorsValues[3] == 1)
-      ));
-  } else if (
-    (sensorsValues[5] == 1 || sensorsValues[2] == 1) ||
-    (sensorsValues[4] == 1 && sensorsValues[3] == 1)
-  ){
+void read_sensors(){
+  for (int i = 0; i < 8; i++){
+    sensorsValues[i] = analogRead(sensorPins[i]) > BLACK_LIMIT ? 1 : 0;
+  }
+}
+
+void solve(){
+  if (sensorsValues[4] == 1 && sensorsValues[5] == 1 && sensorsValues[6] == 1 && sensorsValues[7] == 1){
     forward();
-  } else {
-    do{
-      right();
-      getSensors();
-      break;
-    }while(!(
-      (sensorsValues[5] == 1 || sensorsValues[2] == 1) || 
-      (sensorsValues[4] == 1 && sensorsValues[3] == 1)
-    ));
+    delay(100);
+    stop();
+
+    while(true){
+      read_sensors();
+
+      if (sensorsValues[0] == 1 && sensorsValues[1] == 1 && sensorsValues[2] == 1 && sensorsValues[3] == 1 && sensorsValues[4] == 1 && sensorsValues[5] == 1 && sensorsValues[6] == 1 && sensorsValues[7] == 1){
+        stop();
+        delay(250);
+        solved = true;
+        break;
+      } else {
+        fixed_right_1(45);
+      }
+    }
+  } else if (sensorsValues[3] == 1 && sensorsValues[4] == 1){
+    forward();
+  } else if (sensorsValues[5] == 1 || sensorsValues[6] == 1 || sensorsValues[7] == 1){
+    right();
+  } else if (sensorsValues[0] == 1 || sensorsValues[1] == 1 || sensorsValues[2] == 1){
+    left();
+  } else if (sensorsValues[0] == 0 && sensorsValues[1] == 0 && sensorsValues[2] == 0 && sensorsValues[3] == 0 && sensorsValues[4] == 0 && sensorsValues[5] == 0 && sensorsValues[6] == 0 && sensorsValues[7] == 0){
+    forward();
+    delay(100);
+    fixed_left_2(25);
+
+    while(true){
+      read_sensors();
+
+      if (sensorsValues[0] == 1 || sensorsValues[1] == 1 || sensorsValues[2] == 1 || sensorsValues[3] == 1 || sensorsValues[4] == 1 || sensorsValues[5] == 1 || sensorsValues[6] == 1 || sensorsValues[7] == 1) {
+        break;
+      }
+
+      if (sensorsValues[0] == 0 && sensorsValues[1] == 0 && sensorsValues[2] == 0 && sensorsValues[3] == 0 && sensorsValues[4] == 0 && sensorsValues[5] == 0 && sensorsValues[6] == 0 && sensorsValues[7] == 0) {
+        left_spin();
+      }
+    }
   }
-}
-
-void getSensors(){
-  for (int i = 0; i < sizeof(sensorPins) / sizeof(sensorPins[0]); i++) {
-    int sensorState = analogRead(sensorPins[i]);
-    sensorsValues[i] = sensorState >= BLACK_LIMIT ? 1 : 0;
-    
-    Serial.print(sensorsValues[i]);
-    Serial.print(" ");
-
-  }
-  Serial.println("");
-}
-
-
-int culculateDistance(){
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  // Sets the trigPin on HIGH state for 10 micro seconds
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
-  // Reads the echoPin, returns the sound wave travel time in microseconds
-  duration = pulseIn(echoPin, HIGH);
-  // Calculating the distance
-  return duration*0.034/2;
 }
 
 void forward(){
-  analogWrite(MOT_A1, 0);
-  analogWrite(MOT_A2, 480);
-  analogWrite(MOT_B1, 0);
-  analogWrite(MOT_B2, 474);
+  digitalWrite(MOT_A1, HIGH);
+  digitalWrite(MOT_B1, HIGH);
+  digitalWrite(MOT_A2, LOW);
+  digitalWrite(MOT_B2, LOW);
 }
-
 void backward(){
-  analogWrite(MOT_A1, 480);
+  digitalWrite(MOT_A1, LOW);
+  digitalWrite(MOT_B1, LOW);
+  digitalWrite(MOT_A2, HIGH);
+  digitalWrite(MOT_B2, HIGH);
+}
+void right(){
+  analogWrite(MOT_A1, 250);
+  analogWrite(MOT_B1, 130);
   analogWrite(MOT_A2, 0);
-  analogWrite(MOT_B1, 474);
   analogWrite(MOT_B2, 0);
 }
+void fixed_right_1(int cyc){
+  bool rotate = true;
+  int cycles = cyc;
 
+  countL = 0;
+    
+  while (rotate){
+    if (countL < cycles){
+      analogWrite(MOT_A1, 200);
+      analogWrite(MOT_B1, 0);
+      analogWrite(MOT_A2, 0);
+      analogWrite(MOT_B2, 0);
+    } else if(countL > cycles) {
+      rotate = false;
+    }
+  }
+}
+void fixed_right_2(int cyc){
+  bool rotate = true;
+  int cycles = cyc;
+
+  countL = 0;
+    
+  while (rotate){
+    if (countL < cycles){
+      analogWrite(MOT_A1, 150);
+      analogWrite(MOT_B1, 0);
+      analogWrite(MOT_A2, 0);
+      analogWrite(MOT_B2, 150);
+    } else if(countL > cycles) {
+      rotate = false;
+    }
+  }
+}
+void left(){
+  analogWrite(MOT_A1, 130);
+  analogWrite(MOT_B1, 250);
+  analogWrite(MOT_A2, 0);
+  analogWrite(MOT_B2, 0);
+}
+void fixed_left_1(int cyc){
+  bool rotate = true;
+  int cycles = cyc;
+
+  countR = 0;
+    
+  while (rotate){
+    if(countR < cycles){
+      analogWrite(MOT_A1, 0);
+      analogWrite(MOT_B1, 200);
+      analogWrite(MOT_A2, 0);
+      analogWrite(MOT_B2, 0);
+    }else if(countR > cycles){
+      rotate = false;
+    }
+  }
+}
+void fixed_left_2(int cyc){
+  bool rotate = true;
+  int cycles = cyc;
+
+  countR = 0;
+    
+  while (rotate)
+  {
+    if(countR < cycles)
+    {
+      analogWrite(MOT_A1, 0);
+      analogWrite(MOT_B1, 150);
+      analogWrite(MOT_A2, 150);
+      analogWrite(MOT_B2, 0);
+    }
+    else if(countR > cycles)
+    {
+      rotate = false;
+    }
+  }
+}
+void left_spin()
+{
+  analogWrite(MOT_A1, 0);
+  analogWrite(MOT_B1, 130);
+  analogWrite(MOT_A2, 130);
+  analogWrite(MOT_B2, 0);
+}
 void stop(){
   digitalWrite(MOT_A1, LOW);
   digitalWrite(MOT_B1, LOW);
   digitalWrite(MOT_A2, LOW);
   digitalWrite(MOT_B2, LOW);
 }
-
-void left(){
-  digitalWrite(MOT_A1, HIGH);
-  digitalWrite(MOT_B1, LOW);
-  digitalWrite(MOT_A2, LOW);
-  digitalWrite(MOT_B2, HIGH);
-}
-
-void right(){
-  digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_B1, HIGH);
-  digitalWrite(MOT_A2, HIGH);
-  digitalWrite(MOT_B2, LOW);
-}
-
-void setPixlsRed(){
-  Serial.println("Pixel Red");
-  pixels.setPixelColor(0, pixels.Color(0, BRIGHTNES_LEVEL, 0));
-  pixels.setPixelColor(1, pixels.Color(0, BRIGHTNES_LEVEL, 0));
-  pixels.setPixelColor(2, pixels.Color(0, BRIGHTNES_LEVEL, 0));
-  pixels.setPixelColor(3, pixels.Color(0, BRIGHTNES_LEVEL, 0));
-}
-
-void setPixlsGreen(){
-  Serial.println("Pixel Green");
-  pixels.setPixelColor(0, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
-  pixels.setPixelColor(1, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
-  pixels.setPixelColor(2, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
-  pixels.setPixelColor(3, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
-}
-
-void setPixlsYellow(){
-  Serial.println("Pixel Yellow");
-  pixels.setPixelColor(0, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
-  pixels.setPixelColor(1, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
-  pixels.setPixelColor(2, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
-  pixels.setPixelColor(3, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
-}
-
