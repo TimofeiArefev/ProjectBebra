@@ -22,11 +22,13 @@ const int sensorPins[] = {A0, A1, A2, A3, A4, A5, A6, A7};
 
 #define BLACK_LIMIT 800
 
-const int MOT_A1 = 3;
+const int MOT_A1 = 3 ;
 const int MOT_A2 = 5;
 const int MOT_B1 = 6;
 const int MOT_B2 = 10;
 
+
+int sensor_A0, sensor_A1, sensor_A2, sensor_A3, sensor_A4, sensor_A5, sensor_A6, sensor_A7;
 
 const int trigPin = 12;
 const int echoPin = 13;
@@ -54,65 +56,74 @@ void setup() {
 // the loop function runs over and over again forever
 void loop() {
   // Clears the trigPin
-  distance = culculateDistance();
+  // distance = culculateDistance();
 
-  for (int i = 0; i < 8; i++) {
-    int sensorState = analogRead(sensorPins[i]);
-    Serial.print(sensorState);
-    Serial.print(" ");
-  }
-  Serial.println(" ");
-  delay(100);
+  // for (int i = 0; i < 8; i++) {
+  //   int sensorState = analogRead(sensorPins[i]);
+  //   Serial.print(sensorState);
+  //   Serial.print(" ");
+  // }
+  // Serial.println(" ");
+  // delay(100);
 
-  int sensor_A0 = analogRead(A0);
-  int sensor_A1 = analogRead(A1);
-  int sensor_A2 = analogRead(A2);
-  int sensor_A3 = analogRead(A3);
-  int sensor_A4 = analogRead(A4);
-  int sensor_A5 = analogRead(A5);
-  int sensor_A6 = analogRead(A6);
-  int sensor_A7 = analogRead(A7);
+  sensor_A0 = analogRead(A0);
+  sensor_A1 = analogRead(A1);
+  sensor_A2 = analogRead(A2);
+  sensor_A3 = analogRead(A3);
+  sensor_A4 = analogRead(A4);
+  sensor_A5 = analogRead(A5);
+  sensor_A6 = analogRead(A6);
+  sensor_A7 = analogRead(A7);
 
-
-  if (sensor_A0 >= BLACK_LIMIT && sensor_A1 >= BLACK_LIMIT && sensor_A2  >= BLACK_LIMIT){
+  const int stopDeley = 750;
+  if (isRightSensors()){
     stop();
     Serial.println("1 turn right");
-    delay(3000);
+    delay(stopDeley);
     goStraight();
     delay(200);
+
+
     turnRight();
     Serial.println("turn right");
-
     delay(600);
-    stop();
-    delay(3000);
+    stop();   // 90 d turn
+    // turnRightUltra();
+    
+    delay(200);
   
   }
-  else if (sensor_A5 >= BLACK_LIMIT && sensor_A6 >= BLACK_LIMIT && sensor_A7  >= BLACK_LIMIT){
+  else if (isLeftSensors() ){
     stop();
     Serial.println("turn Left");
-    delay(3000);
+    delay(stopDeley);
     goStraight();
     delay(200);
-    turnLeft();
-    Serial.println("turn left");
-
-    delay(600);
     stop();
-    delay(3000);
+    read();
+    if(!isCenterSensors()){
+      
+      turnLeft();
+      // Serial.println("turn left");
+      delay(600);
+      stop(); // 90 d turn
+
+      delay(200);
+    }
+
   
   }
-  else if (sensor_A0 <= BLACK_LIMIT && sensor_A1 <= BLACK_LIMIT && sensor_A2  <= BLACK_LIMIT && sensor_A3 <= BLACK_LIMIT && 
-  sensor_A4  <= BLACK_LIMIT && sensor_A5 <= BLACK_LIMIT && sensor_A6 <= BLACK_LIMIT && sensor_A7  <= BLACK_LIMIT){
+  else if (isNoSensors()){
     stop();
     Serial.println("Full stop");
-    delay(3000);    
-    fullTurnRight();
-    Serial.println("turn right");
+    delay(stopDeley);    
+    
+    // fullTurnRight();
 
-    delay(740);
-    stop();
-    delay(3000);
+    turnRightUltra();
+
+
+    delay(stopDeley);
 
   
   
@@ -126,22 +137,54 @@ void loop() {
     smallTurnLeft();
     Serial.println("small turn Left");
   }
-  // else if (sensor_A1 >= BLACK_LIMIT && sensor_A2  >= BLACK_LIMIT){
-  //   turnRight();
-  //   Serial.println("2 turn Right");
-  // }
-  // else if (sensor_A2  >= BLACK_LIMIT){
-  //   smallTurnRight();
-  //   Serial.println("3 small turn Right");
-  // }
   else{
     goStraight();
   }
 
-  // if(sensor_A5 >= BLACK_LIMIT && sensor_A6 >= BLACK_LIMIT && sensor_A7  <= BLACK_LIMIT){
+  // if(sensor_A5  >= BLACK_LIMIT && sensor_A6 >= BLACK_LIMIT && sensor_A7  <= BLACK_LIMIT){
   //   smallTurnLeft();
   //   Serial.println("3 small turn LEFT");
   // }
+}
+
+void read(){
+  sensor_A0 = analogRead(A0);
+  sensor_A1 = analogRead(A1);
+  sensor_A2 = analogRead(A2);
+  sensor_A3 = analogRead(A3);
+  sensor_A4 = analogRead(A4);
+  sensor_A5 = analogRead(A5);
+  sensor_A6 = analogRead(A6);
+  sensor_A7 = analogRead(A7);
+
+}
+
+
+bool isRightSensors(){
+    return(isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1) && isOverBlackLimit(sensor_A2)) || (isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1));
+}
+
+bool isLeftSensors(){
+    return (isOverBlackLimit(sensor_A5) && isOverBlackLimit(sensor_A6)  && isOverBlackLimit(sensor_A7)) ||
+  (isOverBlackLimit(sensor_A6) && isOverBlackLimit(sensor_A7));
+  
+  }
+
+
+bool isNoSensors(){
+  return isBelowBlackLimit(sensor_A0) && isBelowBlackLimit(sensor_A1) && isBelowBlackLimit(sensor_A2) && isBelowBlackLimit(sensor_A3) &&  
+  isBelowBlackLimit(sensor_A4) && isBelowBlackLimit(sensor_A5) && isBelowBlackLimit(sensor_A6)  && isBelowBlackLimit(sensor_A7);
+}
+
+bool isCenterSensors(){
+  return isOverBlackLimit(sensor_A4) || isOverBlackLimit(sensor_A5);
+}
+bool isOverBlackLimit(int sensor){
+  return sensor >= BLACK_LIMIT;
+}
+
+bool isBelowBlackLimit(int sensor){
+  return sensor <= BLACK_LIMIT;
 }
 
 int culculateDistance(){
@@ -159,9 +202,9 @@ int culculateDistance(){
 
 void goStraight(){
   analogWrite(MOT_A1, 0);
-  analogWrite(MOT_A2, 480);
+  analogWrite(MOT_A2, 480 );
   analogWrite(MOT_B1, 0);
-  analogWrite(MOT_B2, 474);
+  analogWrite(MOT_B2, 474 );
 }
 
 void smallTurnLeft(){
@@ -193,6 +236,21 @@ void turnRight(){
   digitalWrite(MOT_B2, LOW);
 }
 
+void turnRightUltra(){
+  fullTurnRight(210);
+  while(true){
+    read();
+    if(isCenterSensors()){
+      stop();
+      break;
+    }
+  }
+  fullTurnLeft();
+  delay(100);
+  stop();
+  
+}
+
 
 void fullTurnRight(){
   digitalWrite(MOT_A2, HIGH);
@@ -203,7 +261,24 @@ void fullTurnRight(){
   digitalWrite(MOT_B2, LOW);
 }
 
+void fullTurnRight(int speed){
+  analogWrite(MOT_A2, speed);
+  analogWrite(MOT_B1, speed);
 
+  digitalWrite(MOT_A1, LOW);
+  digitalWrite(MOT_B2, LOW);
+}
+
+
+
+void fullTurnLeft(){
+  digitalWrite(MOT_B2, HIGH);
+  digitalWrite(MOT_A1, HIGH);
+  
+
+  digitalWrite(MOT_B1, LOW);
+  digitalWrite(MOT_A2, LOW);
+}
 void stop(){
   digitalWrite(MOT_A1, LOW);
   digitalWrite(MOT_B1, LOW);
