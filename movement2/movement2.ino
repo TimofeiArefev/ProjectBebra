@@ -20,12 +20,14 @@ Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 const int sensorPins[] = {A0, A1, A2, A3, A4, A5, A6, A7};
 
-#define BLACK_LIMIT 800
+#define BLACK_LIMIT 750
 
-const int MOT_A1 = 3 ;
+const int MOT_A1 = 4;
 const int MOT_A2 = 5;
 const int MOT_B1 = 6;
 const int MOT_B2 = 10;
+const int MOT_R1 = 2;
+const int MOT_R2 = 3;
 
 
 int sensor_A0, sensor_A1, sensor_A2, sensor_A3, sensor_A4, sensor_A5, sensor_A6, sensor_A7;
@@ -36,6 +38,16 @@ const int echoPin = 13;
 long duration;
 int distance;
 
+volatile int countL = 0;
+volatile int countR = 0;
+
+void ISR_L(){
+  countL++;
+}
+
+void ISR_R(){
+  countR++;
+}
 
 void setup() {
   Serial.begin(9600);
@@ -50,6 +62,12 @@ void setup() {
   for (int i = 0; i < 8; i++) {
     pinMode(sensorPins[i], INPUT);
   }
+
+  pinMode(MOT_R1, INPUT_PULLUP);
+  pinMode(MOT_R2, INPUT_PULLUP);
+
+  attachInterrupt(digitalPinToInterrupt(MOT_R1), ISR_R, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(MOT_R2), ISR_L, CHANGE);
 }
 
 
@@ -75,7 +93,7 @@ void loop() {
   sensor_A6 = analogRead(A6);
   sensor_A7 = analogRead(A7);
 
-  const int stopDeley = 750;
+  const int stopDeley = 1000;
   if (isRightSensors()){
     stop();
     Serial.println("1 turn right");
@@ -84,13 +102,13 @@ void loop() {
     delay(200);
 
 
-    turnRight();
-    Serial.println("turn right");
-    delay(600);
-    stop();   // 90 d turn
+    turnRight(25);
+    // Serial.println("turn right");
+    // delay(600);
+    // stop();   // 90 d turn
     // turnRightUltra();
     
-    delay(200);
+    delay(600);
   
   }
   else if (isLeftSensors() ){
@@ -102,15 +120,17 @@ void loop() {
     delay(200);
     stop();
 
+    delay(100);
+    
     read();
     if(!isCenterSensors()){
       
-      turnLeft();
-      // Serial.println("turn left");
-      delay(600);
-      stop(); // 90 d turn
+      turnLeft(25);
+      Serial.println("OH NO GO STRAIGHT");
+      // delay(600);
+      // stop(); 
 
-      delay(200);
+      delay(600);
     }
 
   
@@ -163,7 +183,7 @@ void read(){
 
 
 bool isRightSensors(){
-    return(isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1) && isOverBlackLimit(sensor_A2)) || (isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1));
+    return(isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1) && isOverBlackLimit(sensor_A2)) || (isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1)) || isOverBlackLimit(sensor_A0);
 }
 
 bool isLeftSensors(){
@@ -179,7 +199,7 @@ bool isNoSensors(){
 }
 
 bool isCenterSensors(){
-  return isOverBlackLimit(sensor_A4) || isOverBlackLimit(sensor_A5);
+  return isOverBlackLimit(sensor_A4) || isOverBlackLimit(sensor_A5) ; //||  isOverBlackLimit(sensor_A6)  isOverBlackLimit(sensor_A3) || 
 }
 bool isOverBlackLimit(int sensor){
   return sensor >= BLACK_LIMIT;
@@ -221,21 +241,34 @@ void smallTurnRight(){
 }
 
 
-void turnLeft(){
-  digitalWrite(MOT_B2, HIGH);
+void turnLeft(int d){
+  countL=0;
+  countR=0;
 
-  digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_A2, LOW);
-  digitalWrite(MOT_B1, LOW);
+  while(countL < d){
+    digitalWrite(MOT_B2, HIGH);
+
+    digitalWrite(MOT_A1, LOW);
+    digitalWrite(MOT_A2, LOW);
+    digitalWrite(MOT_B1, LOW);
+
+    Serial.println(countL);
+  }
 }
 
 
-void turnRight(){
-  digitalWrite(MOT_A2, HIGH);
-  
-  digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_B1, LOW);
-  digitalWrite(MOT_B2, LOW);
+void turnRight(int d){
+  countL=0;
+  countR=0;
+
+  while(countR < d){
+    digitalWrite(MOT_A2, HIGH);
+    digitalWrite(MOT_A1, LOW);
+    digitalWrite(MOT_B1, LOW);
+    digitalWrite(MOT_B2, LOW);
+
+    Serial.println(countR);
+  }
 }
 
 void turnRightUltra(){
