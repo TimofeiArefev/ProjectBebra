@@ -83,26 +83,24 @@ void loop() {
   // }
   // Serial.println(" ");
   // delay(100);
+  read();
 
-  sensor_A0 = analogRead(A0);
-  sensor_A1 = analogRead(A1);
-  sensor_A2 = analogRead(A2);
-  sensor_A3 = analogRead(A3);
-  sensor_A4 = analogRead(A4);
-  sensor_A5 = analogRead(A5);
-  sensor_A6 = analogRead(A6);
-  sensor_A7 = analogRead(A7);
-
+  if(isLeftSensors()){
+    goStraight();
+    delay(15);
+    stop();
+  }
+  
   const int stopDeley = 1000;
   if (isRightSensors()){
     stop();
-    Serial.println("1 turn right");
+    //Serial.println("1 turn right");
     delay(stopDeley);
     goStraight();
     delay(200);
 
 
-    turnRight(25);
+    turnRight(32);
     // Serial.println("turn right");
     // delay(600);
     // stop();   // 90 d turn
@@ -120,13 +118,14 @@ void loop() {
     delay(200);
     stop();
 
-    delay(100);
+    delay(1000);
     
     read();
+
     if(!isCenterSensors()){
       
-      turnLeft(25);
-      Serial.println("OH NO GO STRAIGHT");
+      turnLeft(32);
+      // Serial.println("OH NO GO STRAIGHT");
       // delay(600);
       // stop(); 
 
@@ -189,8 +188,7 @@ bool isRightSensors(){
 bool isLeftSensors(){
     return (isOverBlackLimit(sensor_A5) && isOverBlackLimit(sensor_A6)  && isOverBlackLimit(sensor_A7)) ||
   (isOverBlackLimit(sensor_A6) && isOverBlackLimit(sensor_A7));
-  
-  }
+}
 
 
 bool isNoSensors(){
@@ -199,7 +197,7 @@ bool isNoSensors(){
 }
 
 bool isCenterSensors(){
-  return isOverBlackLimit(sensor_A4) || isOverBlackLimit(sensor_A5) ; //||  isOverBlackLimit(sensor_A6)  isOverBlackLimit(sensor_A3) || 
+  return isOverBlackLimit(sensor_A3) || isOverBlackLimit(sensor_A4) ; //||  isOverBlackLimit(sensor_A6)  isOverBlackLimit(sensor_A3) || 
 }
 bool isOverBlackLimit(int sensor){
   return sensor >= BLACK_LIMIT;
@@ -254,6 +252,7 @@ void turnLeft(int d){
 
     Serial.println(countL);
   }
+  stop();
 }
 
 
@@ -267,9 +266,11 @@ void turnRight(int d){
     digitalWrite(MOT_B1, LOW);
     digitalWrite(MOT_B2, LOW);
 
-    Serial.println(countR);
+    // Serial.println(countR);
   }
+  stop();
 }
+
 
 void turnRightUltra(){
   fullTurnRight(210);
