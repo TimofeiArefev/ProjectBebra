@@ -9,8 +9,10 @@
 
 #define BRIGHTNES_LEVEL 20
 
-#define MOTOR_TURN_SPEED 400
+#define  TURN_90 34
 
+#define MOTOR_TURN_SPEED 400
+#define CHECK_STRAIGT_LINE_MOVEMENT 6
 
 
 
@@ -68,39 +70,29 @@ void setup() {
 
   attachInterrupt(digitalPinToInterrupt(MOT_R1), ISR_R, CHANGE);
   attachInterrupt(digitalPinToInterrupt(MOT_R2), ISR_L, CHANGE);
+
+
 }
 
 
 // the loop function runs over and over again forever
 void loop() {
   // Clears the trigPin
-  // distance = culculateDistance();
 
-  // for (int i = 0; i < 8; i++) {
-  //   int sensorState = analogRead(sensorPins[i]);
-  //   Serial.print(sensorState);
-  //   Serial.print(" ");
-  // }
-  // Serial.println(" ");
-  // delay(100);
   read();
 
-  if(isLeftSensors()){
-    goStraight();
-    delay(15);
-    stop();
-  }
   
   const int stopDeley = 1000;
   if (isRightSensors()){
-    stop();
+    // stop();
     //Serial.println("1 turn right");
-    delay(stopDeley);
-    goStraight();
-    delay(200);
+
+    // delay(stopDeley);
+    goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
+    // delay(200);
 
 
-    turnRight(32);
+    turnRight(TURN_90);
     // Serial.println("turn right");
     // delay(600);
     // stop();   // 90 d turn
@@ -110,21 +102,21 @@ void loop() {
   
   }
   else if (isLeftSensors() ){
-    stop();
+    // stop();
     Serial.println("turn Left");
-    delay(stopDeley);
+    // delay(stopDeley);
     
-    goStraight();
-    delay(200);
-    stop();
+    goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
+    // delay(200);
+    // stop();
 
-    delay(1000);
+    // delay(1000);
     
     read();
 
     if(!isCenterSensors()){
       
-      turnLeft(32);
+      turnLeft(TURN_90);
       // Serial.println("OH NO GO STRAIGHT");
       // delay(600);
       // stop(); 
@@ -199,6 +191,7 @@ bool isNoSensors(){
 bool isCenterSensors(){
   return isOverBlackLimit(sensor_A3) || isOverBlackLimit(sensor_A4) ; //||  isOverBlackLimit(sensor_A6)  isOverBlackLimit(sensor_A3) || 
 }
+
 bool isOverBlackLimit(int sensor){
   return sensor >= BLACK_LIMIT;
 }
@@ -271,6 +264,21 @@ void turnRight(int d){
   stop();
 }
 
+
+void goStraight(int d){
+  countL=0;
+  countR=0;
+
+  while(countR < d){
+    digitalWrite(MOT_A1, LOW);
+    digitalWrite(MOT_A2, HIGH);
+    digitalWrite(MOT_B1, LOW);
+    digitalWrite(MOT_B2, HIGH);
+
+    // Serial.println(countR);
+  }
+  stop();
+}
 
 void turnRightUltra(){
   fullTurnRight(210);
