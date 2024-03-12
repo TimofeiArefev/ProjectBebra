@@ -1,42 +1,38 @@
 #include <Adafruit_NeoPixel.h>
 
-#define PIN 11
-#define NUMPIXELS 4
+#define PIN                         11
+#define NUMPIXELS                   4
 
-#define CLOSE 20
-#define NORMAL 30
-#define FAR 100
+#define MOT_A1                      4
+#define MOT_A2                      5
+#define MOT_B1                      6
+#define MOT_B2                      10
+#define MOT_R1                      2
+#define MOT_R2                      3
 
-#define BRIGHTNES_LEVEL 20
+#define trigPin                     12
+#define echoPin                     13
 
-#define  TURN_90 34
+#define CLOSE                       20
+#define NORMAL                      30
+#define FAR                         100
 
-#define MOTOR_TURN_SPEED 400
+#define BRIGHTNES_LEVEL             20
+
+#define TURN_90                     35
+
+#define MOTOR_TURN_SPEED            400
 #define CHECK_STRAIGT_LINE_MOVEMENT 6
 
+#define DELAYVAL                    200
 
+#define BLACK_LIMIT                 750
 
-//I have no idea what is that
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
-#define DELAYVAL 500
 
 const int sensorPins[] = {A0, A1, A2, A3, A4, A5, A6, A7};
-
-#define BLACK_LIMIT 750
-
-const int MOT_A1 = 4;
-const int MOT_A2 = 5;
-const int MOT_B1 = 6;
-const int MOT_B2 = 10;
-const int MOT_R1 = 2;
-const int MOT_R2 = 3;
-
-
 int sensor_A0, sensor_A1, sensor_A2, sensor_A3, sensor_A4, sensor_A5, sensor_A6, sensor_A7;
 
-const int trigPin = 12;
-const int echoPin = 13;
-// defines variables
 long duration;
 int distance;
 
@@ -53,13 +49,13 @@ void ISR_R(){
 
 void setup() {
   Serial.begin(9600);
-  pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
-  pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+  pinMode(trigPin, OUTPUT); 
+  pinMode(echoPin, INPUT);
  
-  pinMode(MOT_A1, OUTPUT); // Sets the echoPin as an Input
-  pinMode(MOT_A2, OUTPUT); // Sets the echoPin as an Input
-  pinMode(MOT_B1, OUTPUT); // Sets the echoPin as an Input
-  pinMode(MOT_B2, OUTPUT); // Sets the echoPin as an Input
+  pinMode(MOT_A1, OUTPUT);
+  pinMode(MOT_A2, OUTPUT);
+  pinMode(MOT_B1, OUTPUT);
+  pinMode(MOT_B2, OUTPUT);
 
   for (int i = 0; i < 8; i++) {
     pinMode(sensorPins[i], INPUT);
@@ -70,94 +66,43 @@ void setup() {
 
   attachInterrupt(digitalPinToInterrupt(MOT_R1), ISR_R, CHANGE);
   attachInterrupt(digitalPinToInterrupt(MOT_R2), ISR_L, CHANGE);
-
-
 }
 
 
-// the loop function runs over and over again forever
 void loop() {
-  // Clears the trigPin
-
   read();
 
-  
-  const int stopDeley = 1000;
   if (isRightSensors()){
-    // stop();
-    //Serial.println("1 turn right");
-
-    // delay(stopDeley);
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
-    // delay(200);
-
-
-    turnRight(TURN_90);
-    // Serial.println("turn right");
-    // delay(600);
-    // stop();   // 90 d turn
-    // turnRightUltra();
-    
-    delay(600);
+    turnRight(TURN_90);    
+    delay(DELAYVAL);
   
   }
-  else if (isLeftSensors() ){
-    // stop();
-    Serial.println("turn Left");
-    // delay(stopDeley);
-    
+  else if (isLeftSensors() ){    
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
-    // delay(200);
-    // stop();
-
-    // delay(1000);
-    
     read();
 
-    if(!isCenterSensors()){
-      
+    if(!isCenterSensors()){      
       turnLeft(TURN_90);
-      // Serial.println("OH NO GO STRAIGHT");
-      // delay(600);
-      // stop(); 
-
-      delay(600);
-    }
-
-  
+      delay(DELAYVAL);
+    }  
   }
   else if (isNoSensors()){
     stop();
-    Serial.println("Full stop");
-    delay(stopDeley);    
-    
-    // fullTurnRight();
-
+    goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
     turnRightUltra();
-
-
-    delay(stopDeley);
-
-  
-  
+    delay(DELAYVAL);
   }
   else if (sensor_A2  >= BLACK_LIMIT){
     smallTurnRight();
-    Serial.println("small turn Right");
   }
 
   else if (sensor_A5  >= BLACK_LIMIT){
     smallTurnLeft();
-    Serial.println("small turn Left");
   }
   else{
     goStraight();
   }
-
-  // if(sensor_A5  >= BLACK_LIMIT && sensor_A6 >= BLACK_LIMIT && sensor_A7  <= BLACK_LIMIT){
-  //   smallTurnLeft();
-  //   Serial.println("3 small turn LEFT");
-  // }
 }
 
 void read(){
@@ -169,7 +114,6 @@ void read(){
   sensor_A5 = analogRead(A5);
   sensor_A6 = analogRead(A6);
   sensor_A7 = analogRead(A7);
-
 }
 
 
@@ -189,7 +133,7 @@ bool isNoSensors(){
 }
 
 bool isCenterSensors(){
-  return isOverBlackLimit(sensor_A3) || isOverBlackLimit(sensor_A4) ; //||  isOverBlackLimit(sensor_A6)  isOverBlackLimit(sensor_A3) || 
+  return isOverBlackLimit(sensor_A3) || isOverBlackLimit(sensor_A4);
 }
 
 bool isOverBlackLimit(int sensor){
@@ -203,21 +147,18 @@ bool isBelowBlackLimit(int sensor){
 int culculateDistance(){
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
-  // Sets the trigPin on HIGH state for 10 micro seconds
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
-  // Reads the echoPin, returns the sound wave travel time in microseconds
   duration = pulseIn(echoPin, HIGH);
-  // Calculating the distance
   return duration*0.034/2;
 }
 
 void goStraight(){
   analogWrite(MOT_A1, 0);
-  analogWrite(MOT_A2, 480 );
+  analogWrite(MOT_A2, MOTOR_TURN_SPEED);
   analogWrite(MOT_B1, 0);
-  analogWrite(MOT_B2, 474 );
+  analogWrite(MOT_B2, 474);
 }
 
 void smallTurnLeft(){
@@ -228,7 +169,6 @@ void smallTurnLeft(){
 void smallTurnRight(){
   analogWrite(MOT_B2, MOTOR_TURN_SPEED);
   analogWrite(MOT_A2, 480);
-
 }
 
 
@@ -238,12 +178,9 @@ void turnLeft(int d){
 
   while(countL < d){
     digitalWrite(MOT_B2, HIGH);
-
     digitalWrite(MOT_A1, LOW);
     digitalWrite(MOT_A2, LOW);
     digitalWrite(MOT_B1, LOW);
-
-    Serial.println(countL);
   }
   stop();
 }
@@ -258,8 +195,6 @@ void turnRight(int d){
     digitalWrite(MOT_A1, LOW);
     digitalWrite(MOT_B1, LOW);
     digitalWrite(MOT_B2, LOW);
-
-    // Serial.println(countR);
   }
   stop();
 }
@@ -269,19 +204,17 @@ void goStraight(int d){
   countL=0;
   countR=0;
 
-  while(countR < d){
+  while(countR < d && countL < d){
     digitalWrite(MOT_A1, LOW);
     digitalWrite(MOT_A2, HIGH);
     digitalWrite(MOT_B1, LOW);
     digitalWrite(MOT_B2, HIGH);
-
-    // Serial.println(countR);
   }
   stop();
 }
 
 void turnRightUltra(){
-  fullTurnRight(210);
+  fullTurnRight(200);
   while(true){
     read();
     if(isCenterSensors()){
@@ -289,8 +222,6 @@ void turnRightUltra(){
       break;
     }
   }
-  fullTurnLeft();
-  delay(100);
   stop();
   
 }
@@ -299,27 +230,21 @@ void turnRightUltra(){
 void fullTurnRight(){
   digitalWrite(MOT_A2, HIGH);
   digitalWrite(MOT_B1, HIGH);
-  
-
   digitalWrite(MOT_A1, LOW);
   digitalWrite(MOT_B2, LOW);
 }
 
-void fullTurnRight(int speed){
-  analogWrite(MOT_A2, speed);
-  analogWrite(MOT_B1, speed);
-
-  digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_B2, LOW);
-}
-
+// void fullTurnRight(int speed){
+//   analogWrite(MOT_A2, speed);
+//   analogWrite(MOT_B1, speed);
+//   digitalWrite(MOT_A1, LOW);
+//   digitalWrite(MOT_B2, LOW);
+// }
 
 
 void fullTurnLeft(){
   digitalWrite(MOT_B2, HIGH);
   digitalWrite(MOT_A1, HIGH);
-  
-
   digitalWrite(MOT_B1, LOW);
   digitalWrite(MOT_A2, LOW);
 }
