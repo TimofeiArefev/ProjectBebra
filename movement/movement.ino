@@ -1,11 +1,14 @@
 #include <Adafruit_NeoPixel.h>
+
+#define TESTING_MODE                true
 //NeoPixel pin
 #define PIN                         11
 
 //Pins
-#define MOT_A1                      4
-#define MOT_A2                      5
-#define MOT_B1                      6
+//TODO: change motor pins
+#define MOT_A1                      4 //this pin
+#define MOT_A2                      5 //this pin
+#define MOT_B1                      6 //this pin
 #define MOT_B2                      10
 #define MOT_R1                      2
 #define MOT_R2                      3
@@ -22,21 +25,21 @@
 #define BRIGHTNES_LEVEL             20
 
 
-#define TURN_90                     35
+#define TURN_90                     36
 //All turns
 
 //Movement
-#define MOTOR_TURN_SPEED            400
+#define MOTOR_TURN_SPEED            200
 #define CHECK_STRAIGT_LINE_MOVEMENT 6
 
-#define MOTOR_A_SPEED               480
-#define MOTOR_B_SPEED               474
+#define MOTOR_A_SPEED               255
+#define MOTOR_B_SPEED               249
 
 
 #define DELAYVAL                    200
 
 //Black limit
-#define BLACK_LIMIT                 750
+int BLACK_LIMIT = 750;
 
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
@@ -78,6 +81,43 @@ void setup() {
 
   attachInterrupt(digitalPinToInterrupt(MOT_R1), ISR_R, CHANGE);
   attachInterrupt(digitalPinToInterrupt(MOT_R2), ISR_L, CHANGE);
+
+  goStraight();
+
+  //Light level colibration 
+  if(!TESTING_MODE){
+    int blackLimit[3];
+    int currentIndex = 0;
+
+    for(int i = 0; i < 7; i++){
+      stop();
+      delay(100);
+      int curentColor = getAverageLightLevel();
+      delay(100);
+      goStraight();
+
+      int color = curentColor;
+      while( color > curentColor - 300 && color < curentColor + 300){
+        color = getAverageLightLevel();
+      }
+      if(i % 2 == 1){
+          Serial.println(curentColor);
+          blackLimit[currentIndex] = curentColor;
+          currentIndex++; 
+      }
+    }
+    Serial.print("res = ");
+    Serial.println(getAverageBlackLimit(blackLimit));
+    
+    // this line does not work
+    // BLACK_LIMIT = getAverageBlackLimit(blackLimit) - 200;
+    stop();
+    delay(1000);
+    //grab
+    goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
+    turnLeft(TURN_90);
+    goStraight(10);
+  }
 }
 
 
@@ -122,6 +162,18 @@ void read() {
   sensor_A7 = analogRead(A7);
 }
 
+int getAverageLightLevel(){
+  read();
+  return (sensor_A0 + sensor_A1 + sensor_A2 + sensor_A5 + sensor_A6 + sensor_A7) / 6;
+}
+
+int getAverageBlackLimit(int* array){
+  int res = 0;
+  for(int i = 0; i < 3; i ++){
+    res += array[i];
+  }
+  return res / 3;
+}
 
 bool isRightSensors() {
   return (isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1) && isOverBlackLimit(sensor_A2)) || (isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1)) || isOverBlackLimit(sensor_A0);
@@ -169,11 +221,11 @@ void goStraight() {
 
 void smallTurnLeft() {
   analogWrite(MOT_A2, MOTOR_TURN_SPEED);
-  analogWrite(MOT_B2, 474);
+  analogWrite(MOT_B2, MOTOR_B_SPEED);
 }
 void smallTurnRight() {
   analogWrite(MOT_B2, MOTOR_TURN_SPEED);
-  analogWrite(MOT_A2, 480);
+  analogWrite(MOT_A2, MOTOR_A_SPEED);
 }
 
 
@@ -273,7 +325,7 @@ void stop() {
 
 
 void setPixlsRed() {
-  Serial.println("Pixel Red");
+  // Serial.println("Pixel Red");
   pixels.setPixelColor(0, pixels.Color(0, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(1, pixels.Color(0, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(2, pixels.Color(0, BRIGHTNES_LEVEL, 0));
@@ -282,7 +334,7 @@ void setPixlsRed() {
 }
 
 void setPixlsGreen() {
-  Serial.println("Pixel Green");
+  // Serial.println("Pixel Green");
   pixels.setPixelColor(0, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
   pixels.setPixelColor(1, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
   pixels.setPixelColor(2, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
@@ -291,7 +343,7 @@ void setPixlsGreen() {
 }
 
 void setPixlsYellow() {
-  Serial.println("Pixel Yellow");
+  // Serial.println("Pixel Yellow");
   pixels.setPixelColor(0, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(1, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(2, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
