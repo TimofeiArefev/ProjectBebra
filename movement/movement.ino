@@ -1,8 +1,8 @@
 #include <Adafruit_NeoPixel.h>
-
+//NeoPixel pin
 #define PIN                         11
-#define NUMPIXELS                   4
 
+//Pins
 #define MOT_A1                      4
 #define MOT_A2                      5
 #define MOT_B1                      6
@@ -17,20 +17,30 @@
 #define NORMAL                      30
 #define FAR                         100
 
+//NeoPixel settings       
+#define NUMPIXELS                   4
 #define BRIGHTNES_LEVEL             20
 
-#define TURN_90                     35
 
+#define TURN_90                     35
+//All turns
+
+//Movement
 #define MOTOR_TURN_SPEED            400
 #define CHECK_STRAIGT_LINE_MOVEMENT 6
 
+#define MOTOR_A_SPEED               480
+#define MOTOR_B_SPEED               474
+
+
 #define DELAYVAL                    200
 
+//Black limit
 #define BLACK_LIMIT                 750
 
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
-const int sensorPins[] = {A0, A1, A2, A3, A4, A5, A6, A7};
+const int sensorPins[] = { A0, A1, A2, A3, A4, A5, A6, A7 };
 int sensor_A0, sensor_A1, sensor_A2, sensor_A3, sensor_A4, sensor_A5, sensor_A6, sensor_A7;
 
 long duration;
@@ -39,19 +49,21 @@ int distance;
 volatile int countL = 0;
 volatile int countR = 0;
 
-void ISR_L(){
+void ISR_L() {
   countL++;
 }
 
-void ISR_R(){
+void ISR_R() {
   countR++;
 }
 
 void setup() {
   Serial.begin(9600);
-  pinMode(trigPin, OUTPUT); 
+  pixels.begin();
+
+  pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
- 
+
   pinMode(MOT_A1, OUTPUT);
   pinMode(MOT_A2, OUTPUT);
   pinMode(MOT_B1, OUTPUT);
@@ -71,41 +83,35 @@ void setup() {
 
 void loop() {
   read();
-
-  if (isRightSensors()){
-    goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
-    turnRight(TURN_90);    
-    delay(DELAYVAL);
-  
+  if(isLeftSensors()){
+    delay(40);
   }
-  else if (isLeftSensors() ){    
+  read();
+  if (isRightSensors()) {
+    goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
+    turnRight(TURN_90);
+    delay(DELAYVAL);
+  } else if (isLeftSensors()) {
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
     read();
-
-    if(!isCenterSensors()){      
+    if (!isCenterSensors()) {
       turnLeft(TURN_90);
       delay(DELAYVAL);
-    }  
-  }
-  else if (isNoSensors()){
-    stop();
+    }
+  } else if (isNoSensors()) {
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
     turnRightUltra();
     delay(DELAYVAL);
-  }
-  else if (sensor_A2  >= BLACK_LIMIT){
+  } else if (sensor_A2 >= BLACK_LIMIT) {
     smallTurnRight();
-  }
-
-  else if (sensor_A5  >= BLACK_LIMIT){
+  } else if (sensor_A5 >= BLACK_LIMIT) {
     smallTurnLeft();
-  }
-  else{
+  } else {
     goStraight();
   }
 }
 
-void read(){
+void read() {
   sensor_A0 = analogRead(A0);
   sensor_A1 = analogRead(A1);
   sensor_A2 = analogRead(A2);
@@ -117,166 +123,178 @@ void read(){
 }
 
 
-bool isRightSensors(){
-    return(isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1) && isOverBlackLimit(sensor_A2)) || (isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1)) || isOverBlackLimit(sensor_A0);
+bool isRightSensors() {
+  return (isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1) && isOverBlackLimit(sensor_A2)) || (isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1)) || isOverBlackLimit(sensor_A0);
 }
 
-bool isLeftSensors(){
-    return (isOverBlackLimit(sensor_A5) && isOverBlackLimit(sensor_A6)  && isOverBlackLimit(sensor_A7)) ||
-  (isOverBlackLimit(sensor_A6) && isOverBlackLimit(sensor_A7));
+bool isLeftSensors() {
+  return (isOverBlackLimit(sensor_A5) && isOverBlackLimit(sensor_A6) && isOverBlackLimit(sensor_A7)) || (isOverBlackLimit(sensor_A6) && isOverBlackLimit(sensor_A7));
 }
 
 
-bool isNoSensors(){
-  return isBelowBlackLimit(sensor_A0) && isBelowBlackLimit(sensor_A1) && isBelowBlackLimit(sensor_A2) && isBelowBlackLimit(sensor_A3) &&  
-  isBelowBlackLimit(sensor_A4) && isBelowBlackLimit(sensor_A5) && isBelowBlackLimit(sensor_A6)  && isBelowBlackLimit(sensor_A7);
+bool isNoSensors() {
+  return isBelowBlackLimit(sensor_A0) && isBelowBlackLimit(sensor_A1) && isBelowBlackLimit(sensor_A2) && isBelowBlackLimit(sensor_A3) && isBelowBlackLimit(sensor_A4) && isBelowBlackLimit(sensor_A5) && isBelowBlackLimit(sensor_A6) && isBelowBlackLimit(sensor_A7);
 }
 
-bool isCenterSensors(){
+bool isCenterSensors() {
   return isOverBlackLimit(sensor_A3) || isOverBlackLimit(sensor_A4);
 }
 
-bool isOverBlackLimit(int sensor){
+bool isOverBlackLimit(int sensor) {
   return sensor >= BLACK_LIMIT;
 }
 
-bool isBelowBlackLimit(int sensor){
+bool isBelowBlackLimit(int sensor) {
   return sensor <= BLACK_LIMIT;
 }
 
-int culculateDistance(){
+int culculateDistance() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
   duration = pulseIn(echoPin, HIGH);
-  return duration*0.034/2;
+  return duration * 0.034 / 2;
 }
 
-void goStraight(){
-  analogWrite(MOT_A1, 0);
+void goStraight() {
+  setPixlsGreen();
+  analogWrite(MOT_A2, MOTOR_A_SPEED);
+  analogWrite(MOT_B2, MOTOR_B_SPEED);
+  analogWrite(MOT_A1, LOW);
+  analogWrite(MOT_B1, LOW);
+}
+
+
+void smallTurnLeft() {
   analogWrite(MOT_A2, MOTOR_TURN_SPEED);
-  analogWrite(MOT_B1, 0);
   analogWrite(MOT_B2, 474);
 }
-
-void smallTurnLeft(){
-  analogWrite(MOT_A2, MOTOR_TURN_SPEED);
-  analogWrite(MOT_B2, 474);
-
-}
-void smallTurnRight(){
+void smallTurnRight() {
   analogWrite(MOT_B2, MOTOR_TURN_SPEED);
   analogWrite(MOT_A2, 480);
 }
 
 
-void turnLeft(int d){
-  countL=0;
-  countR=0;
+void turnLeft(int d) {
+  setPixlsYellow();
+  countL = 0;
+  countR = 0;
 
-  while(countL < d){
-    digitalWrite(MOT_B2, HIGH);
-    digitalWrite(MOT_A1, LOW);
-    digitalWrite(MOT_A2, LOW);
-    digitalWrite(MOT_B1, LOW);
+  while (countL < d) {
+    analogWrite(MOT_B2, MOTOR_B_SPEED);
+    analogWrite(MOT_A1, LOW);
+    analogWrite(MOT_A2, LOW);
+    analogWrite(MOT_B1, LOW);
   }
   stop();
 }
 
 
-void turnRight(int d){
-  countL=0;
-  countR=0;
+void turnRight(int d) {
+  setPixlsYellow();
+  countL = 0;
+  countR = 0;
 
-  while(countR < d){
-    digitalWrite(MOT_A2, HIGH);
-    digitalWrite(MOT_A1, LOW);
-    digitalWrite(MOT_B1, LOW);
-    digitalWrite(MOT_B2, LOW);
+  while (countR < d) {
+    analogWrite(MOT_A2, MOTOR_A_SPEED);
+    analogWrite(MOT_A1, LOW);
+    analogWrite(MOT_B1, LOW);
+    analogWrite(MOT_B2, LOW);
   }
   stop();
 }
 
 
-void goStraight(int d){
-  countL=0;
-  countR=0;
 
-  while(countR < d && countL < d){
-    digitalWrite(MOT_A1, LOW);
-    digitalWrite(MOT_A2, HIGH);
-    digitalWrite(MOT_B1, LOW);
-    digitalWrite(MOT_B2, HIGH);
+
+void goStraight(int d) {
+  setPixlsGreen();
+  countL = 0;
+  countR = 0;
+
+  while (countR < d) {
+    analogWrite(MOT_A2, MOTOR_A_SPEED);
+    analogWrite(MOT_B2, MOTOR_B_SPEED);
+    analogWrite(MOT_A1, LOW);
+    analogWrite(MOT_B1, LOW);
   }
   stop();
 }
 
-void turnRightUltra(){
-  fullTurnRight(200);
-  while(true){
+void turnRightUltra() {
+  setPixlsRed();
+  fullTurnRight(210);
+  while (true) {
     read();
-    if(isCenterSensors()){
+    if (isCenterSensors()) {
       stop();
       break;
     }
   }
   stop();
-  
+  fullTurnLeft();
+  delay(100);
+  stop();
 }
 
 
-void fullTurnRight(){
-  digitalWrite(MOT_A2, HIGH);
-  digitalWrite(MOT_B1, HIGH);
-  digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_B2, LOW);
-}
-
-// void fullTurnRight(int speed){
-//   analogWrite(MOT_A2, speed);
-//   analogWrite(MOT_B1, speed);
-//   digitalWrite(MOT_A1, LOW);
-//   digitalWrite(MOT_B2, LOW);
-// }
-
-
-void fullTurnLeft(){
-  digitalWrite(MOT_B2, HIGH);
-  digitalWrite(MOT_A1, HIGH);
-  digitalWrite(MOT_B1, LOW);
-  digitalWrite(MOT_A2, LOW);
-}
-void stop(){
-  digitalWrite(MOT_A1, LOW);
-  digitalWrite(MOT_B1, LOW);
-  digitalWrite(MOT_A2, LOW);
-  digitalWrite(MOT_B2, LOW);
+void fullTurnRight() {
+  analogWrite(MOT_A2, MOTOR_A_SPEED);
+  analogWrite(MOT_B1, MOTOR_B_SPEED);
+  analogWrite(MOT_A1, LOW);
+  analogWrite(MOT_B2, LOW);
 }
 
 
-void setPixlsRed(){
+void fullTurnRight(int speed) {
+  analogWrite(MOT_A2, speed);
+  analogWrite(MOT_B1, speed + 15);
+  analogWrite(MOT_A1, LOW);
+  analogWrite(MOT_B2, LOW);
+}
+
+
+
+void fullTurnLeft() {
+  analogWrite(MOT_B2, MOTOR_B_SPEED);
+  analogWrite(MOT_A1, MOTOR_A_SPEED);
+  analogWrite(MOT_B1, LOW);
+  analogWrite(MOT_A2, LOW);
+}
+
+void stop() {
+  analogWrite(MOT_A1, LOW);
+  analogWrite(MOT_B1, LOW);
+  analogWrite(MOT_A2, LOW);
+  analogWrite(MOT_B2, LOW);
+}
+
+
+void setPixlsRed() {
   Serial.println("Pixel Red");
   pixels.setPixelColor(0, pixels.Color(0, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(1, pixels.Color(0, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(2, pixels.Color(0, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(3, pixels.Color(0, BRIGHTNES_LEVEL, 0));
+  pixels.show();
 }
 
-void setPixlsGreen(){
+void setPixlsGreen() {
   Serial.println("Pixel Green");
   pixels.setPixelColor(0, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
   pixels.setPixelColor(1, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
   pixels.setPixelColor(2, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
   pixels.setPixelColor(3, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
+  pixels.show();
 }
 
-void setPixlsYellow(){
+void setPixlsYellow() {
   Serial.println("Pixel Yellow");
   pixels.setPixelColor(0, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(1, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(2, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(3, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
+  pixels.show();
 }
-
