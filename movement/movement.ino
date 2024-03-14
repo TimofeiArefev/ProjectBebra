@@ -6,15 +6,17 @@
 
 //Pins
 //TODO: change motor pins
-#define MOT_A1                      4 //this pin
-#define MOT_A2                      5 //this pin
-#define MOT_B1                      6 //this pin
-#define MOT_B2                      10
+#define MOT_A1                      4
+#define MOT_A2                      9 
+#define MOT_B1                      10 
+#define MOT_B2                      6
 #define MOT_R1                      2
 #define MOT_R2                      3
 
 #define trigPin                     12
 #define echoPin                     13
+
+#define GRIP                        8
 
 #define CLOSE                       20
 #define NORMAL                      30
@@ -34,7 +36,6 @@
 
 #define MOTOR_A_SPEED               255
 #define MOTOR_B_SPEED               249
-
 
 #define DELAYVAL                    200
 
@@ -72,6 +73,9 @@ void setup() {
   pinMode(MOT_B1, OUTPUT);
   pinMode(MOT_B2, OUTPUT);
 
+  pinMode(GRIP, OUTPUT);
+  digitalWrite(GRIP, LOW);
+
   for (int i = 0; i < 8; i++) {
     pinMode(sensorPins[i], INPUT);
   }
@@ -82,21 +86,28 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(MOT_R1), ISR_R, CHANGE);
   attachInterrupt(digitalPinToInterrupt(MOT_R2), ISR_L, CHANGE);
 
-  goStraight();
+
+  // while(true){
+  //   intercept();
+  // }
 
   //Light level colibration 
   if(!TESTING_MODE){
+    goStraight();
     int blackLimit[3];
     int currentIndex = 0;
+    int color;
 
-    for(int i = 0; i < 7; i++){
+    stop();
+    
+    for(int i = 0; i < 6; i++){
       stop();
       delay(100);
       int curentColor = getAverageLightLevel();
-      delay(100);
+      delay(1000);
       goStraight();
 
-      int color = curentColor;
+      color = curentColor;
       while( color > curentColor - 300 && color < curentColor + 300){
         color = getAverageLightLevel();
       }
@@ -106,17 +117,22 @@ void setup() {
           currentIndex++; 
       }
     }
-    Serial.print("res = ");
-    Serial.println(getAverageBlackLimit(blackLimit));
-    
+
     // this line does not work
-    // BLACK_LIMIT = getAverageBlackLimit(blackLimit) - 200;
+    BLACK_LIMIT = getAverageBlackLimit(blackLimit) - 200;
+    Serial.print("res = ");
+    Serial.println(BLACK_LIMIT);
     stop();
     delay(1000);
-    //grab
-    goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
-    turnLeft(TURN_90);
+
     goStraight(10);
+
+    intercept();
+    stop(); 
+    
+    goStraight(10);
+    turnLeft(TURN_90);
+    delay(100);
   }
 }
 
@@ -164,7 +180,7 @@ void read() {
 
 int getAverageLightLevel(){
   read();
-  return (sensor_A0 + sensor_A1 + sensor_A2 + sensor_A5 + sensor_A6 + sensor_A7) / 6;
+  return (sensor_A0 + sensor_A1 + sensor_A2 + sensor_A3 + sensor_A4 + sensor_A5 + sensor_A6 + sensor_A7) / 8;
 }
 
 int getAverageBlackLimit(int* array){
@@ -173,6 +189,10 @@ int getAverageBlackLimit(int* array){
     res += array[i];
   }
   return res / 3;
+}
+
+bool isAllSensors(){
+  return (isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1) && isOverBlackLimit(sensor_A2) && isOverBlackLimit(sensor_A3) && isOverBlackLimit(sensor_A4) && isOverBlackLimit(sensor_A5) && isOverBlackLimit(sensor_A6) && isOverBlackLimit(sensor_A7));
 }
 
 bool isRightSensors() {
@@ -210,6 +230,38 @@ int culculateDistance() {
   return duration * 0.034 / 2;
 }
 
+void intercept(){
+  // Serial.println(distance);
+  // while(true){
+    // int distance = culculateDistance();
+    // if (distance >= 9 && distance <= 20){
+      // goStraight(20);
+      grab(); 
+      // break;
+    // }
+  // }
+}
+
+void grab(){
+  Serial.println("grab");
+  for(int i = 0; i < 15; i++){
+    digitalWrite(GRIP, HIGH);
+    delay(1);
+    digitalWrite(GRIP, LOW);
+    delay(19);
+  }
+}
+
+void ungrab(){
+ Serial.println("ungrab");
+  for(int i = 0; i < 15; i++){
+    digitalWrite(GRIP, HIGH);
+    delayMicroseconds(1500);
+    digitalWrite(GRIP, LOW);
+    delayMicroseconds(18500);
+  }
+}
+
 void goStraight() {
   setPixlsGreen();
   analogWrite(MOT_A2, MOTOR_A_SPEED);
@@ -217,7 +269,6 @@ void goStraight() {
   analogWrite(MOT_A1, LOW);
   analogWrite(MOT_B1, LOW);
 }
-
 
 void smallTurnLeft() {
   analogWrite(MOT_A2, MOTOR_TURN_SPEED);
@@ -259,7 +310,7 @@ void turnRight(int d) {
 }
 
 
-
+  
 
 void goStraight(int d) {
   setPixlsGreen();
@@ -290,7 +341,6 @@ void turnRightUltra() {
   delay(100);
   stop();
 }
-
 
 void fullTurnRight() {
   analogWrite(MOT_A2, MOTOR_A_SPEED);
