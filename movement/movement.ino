@@ -1,43 +1,43 @@
 #include <Adafruit_NeoPixel.h>
 
-#define TESTING_MODE                false
+#define TESTING_MODE false
 //NeoPixel pin
-#define PIN                         5
+#define PIN 5
 
 //Pins
 //TODO: change motor pins
-#define MOT_A1                      11
-#define MOT_A2                      10 
-#define MOT_B1                      9 
-#define MOT_B2                      6
-#define MOT_R1                      3
-#define MOT_R2                      2
+#define MOT_A1 11
+#define MOT_A2 10
+#define MOT_B1 9
+#define MOT_B2 6
+#define MOT_R1 3
+#define MOT_R2 2
 
-#define trigPin                     12
-#define echoPin                     13
+#define trigPin 12
+#define echoPin 13
 
-#define GRIP                        4
+#define GRIP 4
 
-#define CLOSE                       20
-#define NORMAL                      30
-#define FAR                         100
+#define CLOSE 20
+#define NORMAL 30
+#define FAR 100
 
-//NeoPixel settings       
-#define NUMPIXELS                   4
-#define BRIGHTNES_LEVEL             20
+//NeoPixel settings
+#define NUMPIXELS 4
+#define BRIGHTNES_LEVEL 20
 
 
-#define TURN_90                     38
+#define TURN_90 38
 //All turns
 
 //Movement
-#define MOTOR_TURN_SPEED            180
+#define MOTOR_TURN_SPEED 180
 #define CHECK_STRAIGT_LINE_MOVEMENT 6
 
-#define MOTOR_A_SPEED               235
-#define MOTOR_B_SPEED               255
+#define MOTOR_A_SPEED 235
+#define MOTOR_B_SPEED 255
 
-#define DELAYVAL                    200
+#define DELAYVAL 200
 
 //Black limit
 int BLACK_LIMIT = 775;
@@ -93,27 +93,33 @@ void setup() {
 
 
 void loop() {
-  if(TESTING_MODE){
+  if (TESTING_MODE) {
     started = true;
   }
 
-  if (!started){
+  if (!started) {
     start();
-  }
-  else if(!solved){
+  } else if (!solved) {
     maze();
-  }
-  else if(!ended){
+  } else if (!ended) {
     end();
   }
 }
 
-void start(){
+void start() {
+
+  int distance = culculateDistance();
+  while( distance > 30){
+    distance = culculateDistance();
+    Serial.println(distance);
+  }
+  activationWait();
+  
   int blackLimit[3];
   int currentIndex = 0;
   int color;
-      
-  for(int i = 0; i < 6; i++){
+
+  for (int i = 0; i < 6; i++) {
     stop();
     delay(100);
     int curentColor = getAverageLightLevel();
@@ -121,13 +127,13 @@ void start(){
     goStraightSlow();
 
     color = curentColor;
-    while( color > curentColor - 300 && color < curentColor + 300){
+    while (color > curentColor - 300 && color < curentColor + 300) {
       color = getAverageLightLevel();
     }
-    if(i % 2 == 1){
+    if (i % 2 == 1) {
       Serial.println(curentColor);
       blackLimit[currentIndex] = curentColor;
-      currentIndex++; 
+      currentIndex++;
     }
   }
 
@@ -140,26 +146,32 @@ void start(){
   goStraight(10);
 
   intercept();
-  stop(); 
-    
-  goStraight(10);
+  stop();
+
+  goStraight(12);
   turnLeft(TURN_90);
   delay(100);
 
   started = true;
 }
 
-void maze(){
+void maze() {
   read();
-  if(isLeftSensors()){
+  if (isLeftSensors()) {
     stop();
     delay(10);
     read();
   }
   if (isRightSensors()) {
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
-    turnRight(TURN_90);
-    delay(DELAYVAL);
+    read();
+    if (isAllSensors()) {
+      solved = true;
+    } else {
+      turnRight(TURN_90);
+      delay(DELAYVAL);
+    }
+
   } else if (isLeftSensors()) {
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
     read();
@@ -182,7 +194,19 @@ void maze(){
   // solved = true;
 }
 
-void end(){
+void end() {
+  delay(1000);
+  goBack(5);
+  ungrab();
+  goBack(30);
+  while (true) {
+    setPixlsRed();
+    delay(200);
+    setPixlsYellow();
+    delay(200);
+    setPixlsGreen();
+    delay(200);
+  }
   ended = true;
 }
 
@@ -197,20 +221,20 @@ void read() {
   sensor_A7 = analogRead(A7);
 }
 
-int getAverageLightLevel(){
+int getAverageLightLevel() {
   read();
   return (sensor_A0 + sensor_A1 + sensor_A2 + sensor_A3 + sensor_A4 + sensor_A5 + sensor_A6 + sensor_A7) / 8;
 }
 
-int getAverageBlackLimit(int* array){
+int getAverageBlackLimit(int* array) {
   int res = 0;
-  for(int i = 0; i < 3; i ++){
+  for (int i = 0; i < 3; i++) {
     res += array[i];
   }
   return res / 3;
 }
 
-bool isAllSensors(){
+bool isAllSensors() {
   return (isOverBlackLimit(sensor_A0) && isOverBlackLimit(sensor_A1) && isOverBlackLimit(sensor_A2) && isOverBlackLimit(sensor_A3) && isOverBlackLimit(sensor_A4) && isOverBlackLimit(sensor_A5) && isOverBlackLimit(sensor_A6) && isOverBlackLimit(sensor_A7));
 }
 
@@ -249,13 +273,13 @@ int culculateDistance() {
   return duration * 0.034 / 2;
 }
 
-void intercept(){
-  grab(); 
+void intercept() {
+  grab();
 }
 
-void grab(){
+void grab() {
   Serial.println("grab");
-  for(int i = 0; i < 15; i++){
+  for (int i = 0; i < 15; i++) {
     digitalWrite(GRIP, HIGH);
     delayMicroseconds(1000);
     digitalWrite(GRIP, LOW);
@@ -263,9 +287,9 @@ void grab(){
   }
 }
 
-void ungrab(){
- Serial.println("ungrab");
-  for(int i = 0; i < 15; i++){
+void ungrab() {
+  Serial.println("ungrab");
+  for (int i = 0; i < 15; i++) {
     digitalWrite(GRIP, HIGH);
     delayMicroseconds(1500);
     digitalWrite(GRIP, LOW);
@@ -329,7 +353,7 @@ void turnRight(int d) {
 }
 
 
-  
+
 
 void goStraight(int d) {
   setPixlsGreen();
@@ -341,6 +365,20 @@ void goStraight(int d) {
     analogWrite(MOT_B2, MOTOR_B_SPEED);
     analogWrite(MOT_A1, LOW);
     analogWrite(MOT_B1, LOW);
+  }
+  stop();
+}
+
+void goBack(int d) {
+  setPixlsGreen();
+  countL = 0;
+  countR = 0;
+
+  while (countR < d) {
+    analogWrite(MOT_A1, MOTOR_A_SPEED);
+    analogWrite(MOT_B1, MOTOR_B_SPEED);
+    analogWrite(MOT_A2, LOW);
+    analogWrite(MOT_B2, LOW);
   }
   stop();
 }
@@ -392,6 +430,17 @@ void stop() {
   analogWrite(MOT_B2, LOW);
 }
 
+void activationWait(){
+  pixels.setPixelColor(0, pixels.Color(0, BRIGHTNES_LEVEL, 0));
+  delay(2000);
+  pixels.setPixelColor(1, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
+  delay(2000);
+  pixels.setPixelColor(2, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
+  delay(2000);
+  pixels.setPixelColor(3, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
+  delay(2000);
+  setPixlsGreen();
+}
 
 void setPixlsRed() {
   // Serial.println("Pixel Red");
