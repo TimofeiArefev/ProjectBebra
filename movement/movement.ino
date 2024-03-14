@@ -1,22 +1,22 @@
 #include <Adafruit_NeoPixel.h>
 
-#define TESTING_MODE                true
+#define TESTING_MODE                false
 //NeoPixel pin
-#define PIN                         11
+#define PIN                         5
 
 //Pins
 //TODO: change motor pins
-#define MOT_A1                      4
-#define MOT_A2                      9 
-#define MOT_B1                      10 
+#define MOT_A1                      11
+#define MOT_A2                      10 
+#define MOT_B1                      9 
 #define MOT_B2                      6
-#define MOT_R1                      2
-#define MOT_R2                      3
+#define MOT_R1                      3
+#define MOT_R2                      2
 
 #define trigPin                     12
 #define echoPin                     13
 
-#define GRIP                        8
+#define GRIP                        4
 
 #define CLOSE                       20
 #define NORMAL                      30
@@ -27,20 +27,20 @@
 #define BRIGHTNES_LEVEL             20
 
 
-#define TURN_90                     36
+#define TURN_90                     38
 //All turns
 
 //Movement
-#define MOTOR_TURN_SPEED            200
+#define MOTOR_TURN_SPEED            180
 #define CHECK_STRAIGT_LINE_MOVEMENT 6
 
-#define MOTOR_A_SPEED               255
-#define MOTOR_B_SPEED               249
+#define MOTOR_A_SPEED               235
+#define MOTOR_B_SPEED               255
 
 #define DELAYVAL                    200
 
 //Black limit
-int BLACK_LIMIT = 750;
+int BLACK_LIMIT = 775;
 
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
@@ -49,6 +49,10 @@ int sensor_A0, sensor_A1, sensor_A2, sensor_A3, sensor_A4, sensor_A5, sensor_A6,
 
 long duration;
 int distance;
+
+bool started = false;
+bool solved = false;
+bool ended = false;
 
 volatile int countL = 0;
 volatile int countR = 0;
@@ -85,64 +89,73 @@ void setup() {
 
   attachInterrupt(digitalPinToInterrupt(MOT_R1), ISR_R, CHANGE);
   attachInterrupt(digitalPinToInterrupt(MOT_R2), ISR_L, CHANGE);
-
-
-  // while(true){
-  //   intercept();
-  // }
-
-  //Light level colibration 
-  if(!TESTING_MODE){
-    goStraight();
-    int blackLimit[3];
-    int currentIndex = 0;
-    int color;
-
-    stop();
-    
-    for(int i = 0; i < 6; i++){
-      stop();
-      delay(100);
-      int curentColor = getAverageLightLevel();
-      delay(1000);
-      goStraight();
-
-      color = curentColor;
-      while( color > curentColor - 300 && color < curentColor + 300){
-        color = getAverageLightLevel();
-      }
-      if(i % 2 == 1){
-          Serial.println(curentColor);
-          blackLimit[currentIndex] = curentColor;
-          currentIndex++; 
-      }
-    }
-
-    // this line does not work
-    BLACK_LIMIT = getAverageBlackLimit(blackLimit) - 200;
-    Serial.print("res = ");
-    Serial.println(BLACK_LIMIT);
-    stop();
-    delay(1000);
-
-    goStraight(10);
-
-    intercept();
-    stop(); 
-    
-    goStraight(10);
-    turnLeft(TURN_90);
-    delay(100);
-  }
 }
 
 
 void loop() {
+  if(TESTING_MODE){
+    started = true;
+  }
+
+  if (!started){
+    start();
+  }
+  else if(!solved){
+    maze();
+  }
+  else if(!ended){
+    end();
+  }
+}
+
+void start(){
+  int blackLimit[3];
+  int currentIndex = 0;
+  int color;
+      
+  for(int i = 0; i < 6; i++){
+    stop();
+    delay(100);
+    int curentColor = getAverageLightLevel();
+    delay(100);
+    goStraightSlow();
+
+    color = curentColor;
+    while( color > curentColor - 300 && color < curentColor + 300){
+      color = getAverageLightLevel();
+    }
+    if(i % 2 == 1){
+      Serial.println(curentColor);
+      blackLimit[currentIndex] = curentColor;
+      currentIndex++; 
+    }
+  }
+
+  BLACK_LIMIT = getAverageBlackLimit(blackLimit) - 100;
+  Serial.print("res = ");
+  Serial.println(BLACK_LIMIT);
+  stop();
+  delay(1000);
+
+  goStraight(10);
+
+  intercept();
+  stop(); 
+    
+  goStraight(10);
+  turnLeft(TURN_90);
+  delay(100);
+
+  started = true;
+}
+
+void maze(){
   read();
   if(isLeftSensors()){
-    delay(40);
+    stop();
+    delay(10);
+    read();
   }
-  read();
   if (isRightSensors()) {
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
     turnRight(TURN_90);
@@ -155,7 +168,7 @@ void loop() {
       delay(DELAYVAL);
     }
   } else if (isNoSensors()) {
-    goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
+    goStraight(8);
     turnRightUltra();
     delay(DELAYVAL);
   } else if (sensor_A2 >= BLACK_LIMIT) {
@@ -165,6 +178,12 @@ void loop() {
   } else {
     goStraight();
   }
+
+  // solved = true;
+}
+
+void end(){
+  ended = true;
 }
 
 void read() {
@@ -231,24 +250,16 @@ int culculateDistance() {
 }
 
 void intercept(){
-  // Serial.println(distance);
-  // while(true){
-    // int distance = culculateDistance();
-    // if (distance >= 9 && distance <= 20){
-      // goStraight(20);
-      grab(); 
-      // break;
-    // }
-  // }
+  grab(); 
 }
 
 void grab(){
   Serial.println("grab");
   for(int i = 0; i < 15; i++){
     digitalWrite(GRIP, HIGH);
-    delay(1);
+    delayMicroseconds(1000);
     digitalWrite(GRIP, LOW);
-    delay(19);
+    delayMicroseconds(19000);
   }
 }
 
@@ -266,6 +277,14 @@ void goStraight() {
   setPixlsGreen();
   analogWrite(MOT_A2, MOTOR_A_SPEED);
   analogWrite(MOT_B2, MOTOR_B_SPEED);
+  analogWrite(MOT_A1, LOW);
+  analogWrite(MOT_B1, LOW);
+}
+
+void goStraightSlow() {
+  setPixlsGreen();
+  analogWrite(MOT_A2, 200);
+  analogWrite(MOT_B2, 200);
   analogWrite(MOT_A1, LOW);
   analogWrite(MOT_B1, LOW);
 }
@@ -338,7 +357,7 @@ void turnRightUltra() {
   }
   stop();
   fullTurnLeft();
-  delay(100);
+  delay(110);
   stop();
 }
 
@@ -352,7 +371,7 @@ void fullTurnRight() {
 
 void fullTurnRight(int speed) {
   analogWrite(MOT_A2, speed);
-  analogWrite(MOT_B1, speed + 15);
+  analogWrite(MOT_B1, speed + 6);
   analogWrite(MOT_A1, LOW);
   analogWrite(MOT_B2, LOW);
 }
@@ -398,5 +417,14 @@ void setPixlsYellow() {
   pixels.setPixelColor(1, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(2, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
   pixels.setPixelColor(3, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
+  pixels.show();
+}
+
+void setPixlsBlue() {
+  // Serial.println("Pixel Blue");
+  pixels.setPixelColor(0, pixels.Color(0, 0, BRIGHTNES_LEVEL));
+  pixels.setPixelColor(1, pixels.Color(0, 0, BRIGHTNES_LEVEL));
+  pixels.setPixelColor(2, pixels.Color(0, 0, BRIGHTNES_LEVEL));
+  pixels.setPixelColor(3, pixels.Color(0, 0, BRIGHTNES_LEVEL));
   pixels.show();
 }
