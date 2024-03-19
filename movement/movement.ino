@@ -27,15 +27,20 @@
 #define BRIGHTNES_LEVEL 20
 
 
-#define TURN_90 37
+#define TURN_90_LEFT 35
+#define TURN_90_RIGHT 37
 //All turns
 
 //Movement
 #define MOTOR_TURN_SPEED 180
 #define CHECK_STRAIGT_LINE_MOVEMENT 6
 
-#define MOTOR_A_SPEED 235
+#define MOTOR_A_SPEED 240
 #define MOTOR_B_SPEED 255
+
+#define MOTOR_A_SLOW_SPEED 215
+#define MOTOR_B_SLOW_SPEED 225
+
 
 #define DELAYVAL 200
 
@@ -163,7 +168,7 @@ void start() {
   delay(1000);
 
   goStraight(10);
-  turnLeft(TURN_90);
+  turnLeft(TURN_90_LEFT);
   delay(100);
 
   started = true;
@@ -176,13 +181,14 @@ void maze() {
     delay(10);
     read();
   }
+  
   if (isRightSensors()) {
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
     read();
     if (isAllSensors()) {
       solved = true;
     } else {
-      turnRight(TURN_90);
+      turnRight(TURN_90_RIGHT);
       delay(DELAYVAL);
     }
 
@@ -190,7 +196,7 @@ void maze() {
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
     read();
     if (!isCenterSensors()) {
-      turnLeft(TURN_90);
+      turnLeft(TURN_90_LEFT);
       delay(DELAYVAL);
     }
   } else if (isNoSensors()) {
@@ -209,7 +215,7 @@ void maze() {
 }
 
 void end() {
-  delay(1000);
+  delay(500);
   goBack(5);
   ungrab();
   goBack(30);
@@ -322,8 +328,8 @@ void goStraight() {
 
 void goStraightSlow() {
   setPixlsGreen();
-  analogWrite(MOT_A2, 195);
-  analogWrite(MOT_B2, 200);
+  analogWrite(MOT_A2, MOTOR_A_SLOW_SPEED);
+  analogWrite(MOT_B2, MOTOR_B_SLOW_SPEED);
   analogWrite(MOT_A1, LOW);
   analogWrite(MOT_B1, LOW);
 }
@@ -400,7 +406,7 @@ void goBack(int d) {
 
 void turnRightUltra() {
   setPixlsRed();
-  fullTurnRight(210);
+  fullTurnRightSlow();
   while (true) {
     read();
     if (isCenterSensors()) {
@@ -415,16 +421,16 @@ void turnRightUltra() {
 }
 
 void fullTurnRight() {
-  analogWrite(MOT_A2, MOTOR_A_SPEED);
   analogWrite(MOT_B1, MOTOR_B_SPEED);
+  analogWrite(MOT_A2, MOTOR_A_SPEED);
   analogWrite(MOT_A1, LOW);
   analogWrite(MOT_B2, LOW);
 }
 
 
-void fullTurnRight(int speed) {
-  analogWrite(MOT_A2, speed);
-  analogWrite(MOT_B1, speed + 6);
+void fullTurnRightSlow() {
+  analogWrite(MOT_B1, MOTOR_B_SLOW_SPEED);
+  analogWrite(MOT_A2, MOTOR_A_SLOW_SPEED);
   analogWrite(MOT_A1, LOW);
   analogWrite(MOT_B2, LOW);
 }
