@@ -27,7 +27,7 @@
 #define BRIGHTNES_LEVEL 20
 
 
-#define TURN_90 38
+#define TURN_90 37
 //All turns
 
 //Movement
@@ -138,17 +138,31 @@ void start() {
   }
 
   BLACK_LIMIT = getAverageBlackLimit(blackLimit) - 100;
+
+  stop();
+  // delay(10000);
   Serial.print("res = ");
   Serial.println(BLACK_LIMIT);
   stop();
   delay(1000);
 
-  goStraight(10);
+  while(!isAllSensors()){
+    read();
+    if (sensor_A2 >= BLACK_LIMIT) {
+    smallTurnRight();
+    } else if (sensor_A5 >= BLACK_LIMIT) {
+      smallTurnLeft();
+    } else {
+      goStraightSlow();
+    }
+  }
+  // goStraight(10);
 
   intercept();
   stop();
+  delay(1000);
 
-  goStraight(12);
+  goStraight(10);
   turnLeft(TURN_90);
   delay(100);
 
@@ -249,6 +263,7 @@ bool isLeftSensors() {
 
 bool isNoSensors() {
   return isBelowBlackLimit(sensor_A0) && isBelowBlackLimit(sensor_A1) && isBelowBlackLimit(sensor_A2) && isBelowBlackLimit(sensor_A3) && isBelowBlackLimit(sensor_A4) && isBelowBlackLimit(sensor_A5) && isBelowBlackLimit(sensor_A6) && isBelowBlackLimit(sensor_A7);
+
 }
 
 bool isCenterSensors() {
@@ -307,7 +322,7 @@ void goStraight() {
 
 void goStraightSlow() {
   setPixlsGreen();
-  analogWrite(MOT_A2, 200);
+  analogWrite(MOT_A2, 195);
   analogWrite(MOT_B2, 200);
   analogWrite(MOT_A1, LOW);
   analogWrite(MOT_B1, LOW);
@@ -432,12 +447,16 @@ void stop() {
 
 void activationWait(){
   pixels.setPixelColor(0, pixels.Color(0, BRIGHTNES_LEVEL, 0));
+  pixels.show();
   delay(2000);
   pixels.setPixelColor(1, pixels.Color(BRIGHTNES_LEVEL, BRIGHTNES_LEVEL, 0));
+  pixels.show();
   delay(2000);
   pixels.setPixelColor(2, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
+  pixels.show();
   delay(2000);
   pixels.setPixelColor(3, pixels.Color(BRIGHTNES_LEVEL, 0, 0));
+  pixels.show();
   delay(2000);
   setPixlsGreen();
 }
