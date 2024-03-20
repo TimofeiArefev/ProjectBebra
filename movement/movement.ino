@@ -27,7 +27,7 @@
 #define BRIGHTNES_LEVEL 20
 
 
-#define TURN_90_LEFT 35
+#define TURN_90_LEFT 36
 #define TURN_90_RIGHT 37
 //All turns
 
@@ -38,8 +38,12 @@
 #define MOTOR_A_SPEED 240
 #define MOTOR_B_SPEED 255
 
-#define MOTOR_A_SLOW_SPEED 215
-#define MOTOR_B_SLOW_SPEED 225
+#define MOTOR_A_SLOW_SPEED 207
+#define MOTOR_B_SLOW_SPEED 218
+
+#define MOTOR_A_SLOW_TURN_SPEED 217
+#define MOTOR_B_SLOW_TURN_SPEED 225
+
 
 
 #define DELAYVAL 200
@@ -167,7 +171,7 @@ void start() {
   stop();
   delay(1000);
 
-  goStraight(10);
+  goStraight(6);
   turnLeft(TURN_90_LEFT);
   delay(100);
 
@@ -406,7 +410,7 @@ void goBack(int d) {
 
 void turnRightUltra() {
   setPixlsRed();
-  fullTurnRightSlow();
+  fullTurnRight();
   while (true) {
     read();
     if (isCenterSensors()) {
@@ -429,8 +433,8 @@ void fullTurnRight() {
 
 
 void fullTurnRightSlow() {
-  analogWrite(MOT_B1, MOTOR_B_SLOW_SPEED);
-  analogWrite(MOT_A2, MOTOR_A_SLOW_SPEED);
+  analogWrite(MOT_B1, MOTOR_B_SLOW_TURN_SPEED);
+  analogWrite(MOT_A2, MOTOR_A_SLOW_TURN_SPEED);
   analogWrite(MOT_A1, LOW);
   analogWrite(MOT_B2, LOW);
 }
