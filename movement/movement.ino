@@ -41,8 +41,8 @@
 #define MOTOR_A_SLOW_SPEED 207
 #define MOTOR_B_SLOW_SPEED 218
 
-#define MOTOR_A_SLOW_TURN_SPEED 217
-#define MOTOR_B_SLOW_TURN_SPEED 225
+#define MOTOR_A_SLOW_TURN_SPEED 220
+#define MOTOR_B_SLOW_TURN_SPEED 223
 
 // Delay
 #define DELAYVAL 200
@@ -114,13 +114,21 @@ void loop() {
 
 //Running when obstacle apper and calibrate black limit
 void start() {
-  //Check is obstacle appear 
+  //Check is obstacle appear
   int distance = culculateDistance();
-  while( distance > 30){
+  Serial.println(distance);
+  int countToStart = 0;
+  while (distance >= 30 || countToStart < 5) {
     distance = culculateDistance();
+    Serial.println(distance);
+    if (distance > 30) {
+      countToStart = 0;
+    } else {
+      countToStart++;
+    }
   }
   activationWait();
-  
+
   //Calibration for black limit
   int blackLimit[3];
   int currentIndex = 0;
@@ -150,16 +158,17 @@ void start() {
   delay(1000);
 
   //Adjust movement
-  while(!isAllSensors()){
-    read();
-    if (sensor_A2 >= BLACK_LIMIT) {
-    smallTurnRight();
-    } else if (sensor_A5 >= BLACK_LIMIT) {
-      smallTurnLeft();
-    } else {
-      goStraightSlow();
-    }
-  }
+  // while (!isAllSensors()) {
+  //   read();
+  //   if (sensor_A2 >= BLACK_LIMIT) {
+  //     smallTurnRight();
+  //   } else if (sensor_A5 >= BLACK_LIMIT) {
+  //     smallTurnLeft();
+  //   } else {
+  //     goStraightSlow();
+  //   }
+  // }
+  startMovementAdjustment();
 
   grab();
   stop();
@@ -180,7 +189,7 @@ void maze() {
     delay(10);
     read();
   }
-  
+
   if (isRightSensors()) {
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
     read();
@@ -211,7 +220,7 @@ void maze() {
   }
 }
 
-//Finish maze solving and ungrab obstacle 
+//Finish maze solving and ungrab obstacle
 void end() {
   delay(500);
   goBack(5);
@@ -246,7 +255,7 @@ int getAverageLightLevel() {
   return (sensor_A0 + sensor_A1 + sensor_A2 + sensor_A3 + sensor_A4 + sensor_A5 + sensor_A6 + sensor_A7) / 8;
 }
 
-// Calculate black limit from array of light levels 
+// Calculate black limit from array of light levels
 int getAverageBlackLimit(int* array) {
   int res = 0;
   for (int i = 0; i < 3; i++) {
@@ -282,6 +291,28 @@ bool isOverBlackLimit(int sensor) {
 
 bool isBelowBlackLimit(int sensor) {
   return sensor <= BLACK_LIMIT;
+}
+
+
+void startMovementAdjustment() {
+  while (!isAllSensors()) {
+    read();
+    if        (isOverBlackLimit(sensor_A1)) {
+      smallTurnRight(210);
+    } else if (isOverBlackLimit(sensor_A6)) {
+      smallTurnLeft(210);
+    } else if (isOverBlackLimit(sensor_A0)){
+      smallTurnRight(160);
+    } else if (isOverBlackLimit(sensor_A7)){
+      smallTurnLeft(160);
+    } else if (isOverBlackLimit(sensor_A2)) {
+      smallTurnRight();
+    } else if (isOverBlackLimit(sensor_A5)) {
+      smallTurnLeft();
+    }else {
+      goStraightSlow();
+    }
+  }
 }
 
 
@@ -370,15 +401,27 @@ void stop() {
   analogWrite(MOT_B2, LOW);
 }
 
-//Turning
+//Small Turning
 void smallTurnLeft() {
   analogWrite(MOT_A2, MOTOR_TURN_SPEED);
   analogWrite(MOT_B2, MOTOR_B_SPEED);
 }
+
 void smallTurnRight() {
   analogWrite(MOT_B2, MOTOR_TURN_SPEED);
   analogWrite(MOT_A2, MOTOR_A_SPEED);
 }
+
+void smallTurnLeft(int speed) {
+  analogWrite(MOT_A2, speed);
+  analogWrite(MOT_B2, MOTOR_B_SPEED);
+}
+
+void smallTurnRight(int speed) {
+  analogWrite(MOT_B2, speed);
+  analogWrite(MOT_A2, MOTOR_A_SPEED);
+}
+
 
 void turnLeft(int d) {
   setPixlsYellow();
@@ -420,7 +463,7 @@ void turnRightUltra() {
   }
   stop();
   fullTurnLeft();
-  delay(110);
+  delay(200);
   stop();
 }
 
@@ -449,7 +492,7 @@ void fullTurnLeft() {
 }
 
 // Shows robot initialization visualy
-void activationWait(){
+void activationWait() {
   pixels.setPixelColor(0, pixels.Color(0, BRIGHTNES_LEVEL, 0));
   pixels.show();
   delay(1000);
