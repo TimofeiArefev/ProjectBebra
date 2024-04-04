@@ -28,18 +28,18 @@
 #define GRIP 4
 
 //Turns
-#define TURN_90_LEFT 36
+#define TURN_90_LEFT 34
 #define TURN_90_RIGHT 37
 
 //Movement
 #define MOTOR_TURN_SPEED 180
-#define CHECK_STRAIGT_LINE_MOVEMENT 6
+#define CHECK_STRAIGT_LINE_MOVEMENT 7
 
 #define MOTOR_A_SPEED 240
 #define MOTOR_B_SPEED 255
 
-#define MOTOR_A_SLOW_SPEED 207
-#define MOTOR_B_SLOW_SPEED 218
+#define MOTOR_A_SLOW_SPEED 210
+#define MOTOR_B_SLOW_SPEED 220
 
 #define MOTOR_A_SLOW_TURN_SPEED 220
 #define MOTOR_B_SLOW_TURN_SPEED 223
@@ -174,7 +174,7 @@ void start() {
   stop();
   delay(1000);
 
-  goStraight(6);
+  goStraight(8);
   turnLeft(TURN_90_LEFT);
   delay(100);
 
@@ -202,8 +202,10 @@ void maze() {
 
   } else if (isLeftSensors()) {
     goStraight(CHECK_STRAIGT_LINE_MOVEMENT);
+    stop();
+    delay(10);
     read();
-    if (!isCenterSensors()) {
+    if (!isCenterandOrSmallRightSensors()) {
       turnLeft(TURN_90_LEFT);
       delay(DELAYVAL);
     }
@@ -283,6 +285,10 @@ bool isNoSensors() {
 
 bool isCenterSensors() {
   return isOverBlackLimit(sensor_A3) || isOverBlackLimit(sensor_A4);
+}
+
+bool isCenterandOrSmallRightSensors() {
+  return isOverBlackLimit(sensor_A3) || isOverBlackLimit(sensor_A4) || isOverBlackLimit(sensor_A2);
 }
 
 bool isOverBlackLimit(int sensor) {
@@ -463,7 +469,7 @@ void turnRightUltra() {
   }
   stop();
   fullTurnLeft();
-  delay(200);
+  delay(140);
   stop();
 }
 
